@@ -7,4 +7,6 @@
 class EventCollector
 {
     std::vector<Event> events{};
+
+public:
 };

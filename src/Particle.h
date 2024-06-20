@@ -21,10 +21,31 @@ public:
     float mass; // Expected mass of the particle
 
     /**
-     * @brief Construct a new Particle object
+     * @brief Construct a new Particle object with mass.
      * 
+     * @param p trk_p
+     * @param pt trk_pt
+     * @param eta trk_eta
+     * @param phi trk_phi
+     * @param q trk_q
+     * @param dxy trk_dxy
+     * @param dz trk_dz
+     * @param mass expected mass of the particle
      */
-    Particle();
+    Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass);
+
+    /**
+     * @brief Construct a new Particle object without mass
+     * 
+     * @param p trk_p
+     * @param pt trk_pt
+     * @param eta trk_eta
+     * @param phi trk_phi
+     * @param q trk_q
+     * @param dxy trk_dxy
+     * @param dz trk_dz
+     */
+    Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz);
 
     /**
      * @brief Calculate the different components of momentum
@@ -37,6 +58,20 @@ public:
      * 
      */
     void calculate_theta();
+
+    /**
+     * @brief Initiates a particle object and calculates its attributes
+     * 
+     * @param p trk_p
+     * @param pt trk_pt
+     * @param eta trk_eta
+     * @param phi trk_phi
+     * @param q trk_q
+     * @param dxy trk_dxy
+     * @param dz trk_dz
+     * @param mass expected mass of the particle
+     */
+    void initiate_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass);
 
 };
 #endif
