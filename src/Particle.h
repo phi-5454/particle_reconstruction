@@ -4,6 +4,10 @@
  */
 #ifndef PARTICLE_H
 #define PARTICLE_H
+/**
+ * @brief A class for a particle that's detected in the CMS
+ * 
+ */
 class Particle
 {
 public:

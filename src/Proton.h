@@ -1,6 +1,9 @@
-#ifndef EVENT_H
-#define EVENT_H
-
+#ifndef PROTON_H
+#define PROTON_H
+/**
+ * @brief A class for a proton that is detected in the Roman Pots,
+ * 
+ */
 class Proton
 {
 public:
