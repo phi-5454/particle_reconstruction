@@ -29,6 +29,16 @@ void Particle::calculate_theta()
     theta = asin(pt / p);
 }
 
+void Particle::calculate_mass()
+{
+    mass = sqrt(pow(E, 2) - pow(p, 2));
+}
+
+void Particle::calculate_energy()
+{
+    E = sqrt(pow(mass, 2) + pow(p, 2));
+}
+
 void Particle::initiate_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass)
 {
     Particle(p, pt, eta, phi, q, dxy, dz, mass);

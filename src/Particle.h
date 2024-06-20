@@ -18,7 +18,8 @@ public:
     int q; // Charge
     float dxy; // Particle's track's smallest deviation in xy-plane from the primary vertex 
     float dz; // Particle's track's smallest deviation along z-axis from the primary vertex
-    float mass; // Expected mass of the particle
+    float mass; // Expected invariant mass of the particle
+    float E; // Expected energy of the particle
 
     /**
      * @brief Construct a new Particle object with mass.
@@ -48,16 +49,16 @@ public:
     Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz);
 
     /**
-     * @brief Calculate the different components of momentum
+     * @brief Calculate the energy of the particle
      * 
      */
-    void calculate_momenta();
+    void calculate_energy();
 
     /**
-     * @brief Calculate the scattering angle of the particle
+     * @brief Calculate the mass of the particle
      * 
      */
-    void calculate_theta();
+    void calculate_mass();
 
     /**
      * @brief Initiates a particle object and calculates its attributes
@@ -73,5 +74,17 @@ public:
      */
     void initiate_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass);
 
+private:
+    /**
+     * @brief Calculate the different components of momentum
+     * 
+     */
+    void calculate_momenta();
+
+    /**
+     * @brief Calculate the scattering angle of the particle
+     * 
+     */
+    void calculate_theta();
 };
 #endif
