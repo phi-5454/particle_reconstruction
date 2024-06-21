@@ -1,7 +1,3 @@
-/**
- * @brief Class for an individual particle
- * 
- */
 #ifndef PARTICLE_H
 #define PARTICLE_H
 /**

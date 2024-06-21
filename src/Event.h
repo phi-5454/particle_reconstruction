@@ -12,8 +12,8 @@ class Event
 {
 public:
     int ntracks; // Amount of particles in the event, not including protons
-    std::vector<std::vector<Particle>> particles; // The particles, initial and reconstructed, associated with an event
-    std::vector<Proton> protons; // The protons associated with an event
+    std::vector<std::vector<Particle*>> particles; // The particles, initial and reconstructed, associated with an event
+    std::vector<Proton*> protons; // The protons associated with an event
     float zPV; // Z coordinate of the primary vertex of the event
 
     /**
@@ -35,8 +35,9 @@ public:
      * @param dxy trk_dxy
      * @param dz trk_dz
      * @param mass Expected mass of the particle
+     * @param i Particle's iteration level 
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, int i);
 
     /**
      * @brief Adds a particle without mass to the event
@@ -58,5 +59,30 @@ public:
      * @param Thy ThyL/R
      */
     void add_proton(float Thx, float Thy);
+
+    /**
+     * @brief Removes a particle from the event 
+     * 
+     * @param i Particle's iteration level
+     * @param j Particle's position in the vector
+     */
+    void remove_particle(int i, int j);
+
+    /**
+     * @brief Get the particle object at location [i][j]
+     * 
+     * @param i Particle's iteration level
+     * @param j Particle's position in the vector
+     * @return Particle 
+     */
+    Particle* get_particle(int i, int j);
+
+    /**
+     * @brief Get the proton object
+     * 
+     * @param i Proton's position in the vector
+     * @return Proton 
+     */
+    Proton* get_proton(int i);
 };
 #endif

@@ -3,13 +3,13 @@
 
 Particle::Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass)
 {
-    p = p;
-    pt = pt;
-    phi = phi;
-    q = q;
-    dxy = dxy;
-    dz = dz;
-    mass = mass;
+    this->p = p;
+    this->pt = pt;
+    this->phi = phi;
+    this->q = q;
+    this->dxy = dxy;
+    this->dz = dz;
+    this->mass = mass;
 }
 
 Particle::Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz)

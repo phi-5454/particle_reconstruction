@@ -3,8 +3,8 @@
 
 Proton::Proton(float Thx, float Thy)
 {
-    Thx = Thx;
-    Thy = Thy;
+    this->Thx = Thx;
+    this->Thy = Thy;
 }
 
 void Proton::calculate_momenta()
