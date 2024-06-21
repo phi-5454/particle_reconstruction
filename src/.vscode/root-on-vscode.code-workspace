@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "../"
+		}
+  ],
+  "settings": {
+    "files.associations": {
+      "hsimple.C": "cpp",
+      "h1ReadAndDraw.C": "cpp",
+      "ReadNTuple.C": "cpp",
+      "ntuple1.C": "cpp",
+      "CreateTree.C": "cpp",
+      "firstTest.C": "cpp",
+      "dataFilter.C": "cpp",
+      "temp.C": "cpp",
+      "cmath": "cpp"
+    },
+    "C_Cpp.default.includePath": [
+      "${default}",
+      "/cvmfs/sft.cern.ch/lcg/releases/ROOT/v6.24.00-fc1d8/x86_64-mac11-clang120-opt/include",
+    ]
+  }
+}
