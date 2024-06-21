@@ -3,6 +3,7 @@
 #include "TChain.h"
 #include "TTreeReader.h"
 #include "TTreeReaderArray.h"
+#include "TH1.h"
 #include <string>
 
 EventCollector::EventCollector()
@@ -47,12 +48,50 @@ void EventCollector::initialize_events()
     }
 
     std::cout << "Finished initializing events" << std::endl;
+
+    h->Close();
 }
 
 void EventCollector::filter_initial_events()
 {
+    std::cout << "Starting filtering" << std::endl;
+
     for (Event* &event : events)
     {
-        if (event->ntracks != 4) events.erase(std::remove(events.begin(), events.end(), event));
+        if (event->ntracks != 4) 
+        {
+            events.erase(std::remove(events.begin(), events.end(), event));
+            continue;
+        }
+        int charge = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            charge += event->get_particle(0, i)->q;
+        }
+        if (charge != 0)
+        {
+            events.erase(std::remove(events.begin(), events.end(), event));
+            continue;
+        }
     }
+
+    std::cout << "Finished filtering" << std::endl;
+}
+
+void EventCollector::analyze()
+{
+    std::cout << "Starting analyzing" << std::endl;
+    TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
+    TH1F* h1 = new TH1F("h1", "h1", 400, -20, 20);
+
+    for (Event* &event : events)
+    {
+        h1->Fill(event->zPV);
+    }
+
+    h1->Write();
+    h1->Draw();
+    results->Close();
+
+    std::cout << "Finished analyzing" << std::endl;
 }
