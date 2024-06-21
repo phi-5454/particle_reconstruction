@@ -49,8 +49,9 @@ public:
      * @param q trk_q
      * @param dxy trk_dxy
      * @param dz trk_dz
+     * @param i Particle's iteration level
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, int i);
 
     /**
      * @brief Adds a proton to the event

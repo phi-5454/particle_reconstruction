@@ -13,7 +13,7 @@ class EventCollector
 {
 public:
     std::string filepath = "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
-    std::string results = "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results";
+    std::string results = "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root";
     std::vector<Event*> events;
 
     /**
