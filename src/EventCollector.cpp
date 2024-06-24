@@ -5,6 +5,7 @@
 #include "TTreeReaderArray.h"
 #include "TH1.h"
 #include "TCanvas.h"
+#include "TF1.h"
 #include <string>
 
 EventCollector::EventCollector()
@@ -39,7 +40,7 @@ void EventCollector::initialize_events()
     TTreeReaderArray<Float_t> ThyR(myReader, "ThyR");
     TTreeReaderArray<Float_t> ThyL(myReader, "ThyL");
 
-    std::cout << "Starting to initialize events" << std::endl;
+    std::cout << "Initializing events" << std::endl;
 
 
     while(myReader.Next())
@@ -84,9 +85,19 @@ TH1F* EventCollector::create_1Dhistogram(F&& lambda, bool draw)
 }
 
 template <typename F>
-TFitResultPtr create_histogram_fit(F&& lambda, std::string distr)
+TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, int bins, float low, float high, std::string title, std::string distr)
 {
-    return nullptr;
+    TH1F* h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
+    h1->Fit(distr.c_str());
+    return h1->GetFunction("gaus");
+}
+
+template <typename F>
+TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, std::string distr)
+{
+    TH1F* h1 = create_1Dhistogram(lambda, false);
+    h1->Fit(distr.c_str());
+    return h1->GetFunction("gaus");
 }
 
 template <typename F>
@@ -98,9 +109,37 @@ void EventCollector::filter_events(F&& lambda)
     events = helper;
 }
 
+template <typename F>
+void EventCollector::filter_events_distribution(F&& lambda, std::string distr, float sigmaMulti, int bins, float low, float high, std::string title, bool isPart)
+{
+    TF1* fit = create_1Dhistogram_fit(lambda, bins, low, high, title, distr);
+    float mean = fit->GetParameter("Mean");
+    float sigma = fit->GetParameter("Sigma");
+    filter_events([&](Event* e) {
+        if (isPart)
+        {
+            for (int i = 0; i < 4; ++i) {if (lambda(e) < mean - sigmaMulti * sigma || lambda(e) > mean + sigmaMulti * sigma) return false;} return true;
+        }
+        return (lambda(e) > mean - sigmaMulti * sigma && lambda(e) < mean + sigmaMulti * sigma);});
+}
+
+template <typename F>
+void EventCollector::filter_events_distribution(F&& lambda, std::string distr, float sigmaMulti, bool isPart)
+{
+    TF1* fit = create_1Dhistogram_fit(lambda, distr);
+    float mean = fit->GetParameter("Mean");
+    float sigma = fit->GetParameter("Sigma");
+    filter_events([&](Event* e) {
+        if (isPart)
+        {
+            for (int i = 0; i < 4; ++i) {if (lambda(e) < mean - sigmaMulti * sigma || lambda(e) > mean + sigmaMulti * sigma) return false;} return true;
+        }
+        return (lambda(e) > mean - sigmaMulti * sigma && lambda(e) < mean + sigmaMulti * sigma);});
+}
+
 void EventCollector::filter_initial_events()
 {
-    std::cout << "Starting filtering" << std::endl;
+    std::cout << "Filtering events" << std::endl;
     filter_events([](Event* e) {return e->ntracks == 4;});
     filter_events([](Event* e) {int j = 0; for (int i = 0; i < 4; ++i) { j+= e->get_particle(0, i)->q;} return j == 0;});
 
@@ -109,14 +148,13 @@ void EventCollector::filter_initial_events()
 
 void EventCollector::analyze()
 {
-    std::cout << "Starting analyzing" << std::endl;
+    std::cout << "Analyzing events" << std::endl;
     TCanvas* c1 = new TCanvas("c1", "c1"); 
     c1->Draw();
     TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
-    TH1F* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true);
-    h1->Fit("gaus");
-//    TH1F* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, 200, -20, 20, "Primary vertex Z position", true);
-    h1->Write();
+    filter_events_distribution([](Event* event) {return event->zPV;}, "gaus", 1, false);
+    TH1* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true);
+//    h1->Write();
     c1->SaveAs("hist1.pdf");
     results->Close();
 

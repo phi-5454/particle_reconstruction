@@ -63,10 +63,25 @@ public:
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda
      * @param distr The distribution used in the fit
-     * @return TFitResultPtr 
+     * @return TF1* The fitted function 
      */
     template <typename F>
-    TFitResultPtr create_histogram_fit(F&& lambda, std::string distr);
+    TF1* create_1Dhistogram_fit(F&& lambda, std::string distr);
+
+    /**
+     * @brief Create a histogram with a fit
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param distr The distribution used in the fit
+     * @return TF1* The fitted function 
+     */
+    template <typename F>
+    TF1* create_1Dhistogram_fit(F&& lambda, int bins, float low, float high, std::string title, std::string distr);
 
     /**
      * @brief Filters the events based on the given lambda function
@@ -84,9 +99,26 @@ public:
      * @param lambda The property to be fitted in the histogram that is then fitted
      * @param distr The distribution function
      * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
+     * @param isPart Whether the property is for each individual particle
      */
     template <typename F>
-    void filter_events_distribution(F&& lambda, std::string distr, float sigma);
+    void filter_events_distribution(F&& lambda, std::string distr, float sigma, bool isPart);
+
+    /**
+     * @brief Filters the events based on the distribution
+     * 
+     * @tparam F A Lambda function
+     * @param lambda The property to be fitted 
+     * @param distr The distribution function
+     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param isPart Whether the property is for each individual particle
+     */
+    template <typename F>
+    void filter_events_distribution(F&& lambda, std::string distr, float sigma, int bins, float low, float high, std::string title, bool isPart);
 
     /**
      * @brief Filters the inial events to fit the provided criteria
