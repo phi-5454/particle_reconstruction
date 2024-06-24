@@ -29,6 +29,15 @@ public:
     void initialize_events();
 
     /**
+     * @brief Filters the events based on the given lambda function
+     * 
+     * @tparam F A lambda function
+     * @param lambda The filter function
+     */
+    template <typename F>
+    void filter_events(F&& lambda);
+
+    /**
      * @brief Filters the inial events to fit the provided criteria
      * 
      */

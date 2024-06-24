@@ -58,32 +58,21 @@ void EventCollector::initialize_events()
     h->Close();
 }
 
+template <typename F>
+void EventCollector::filter_events(F&& lambda)
+{
+    auto helper = std::vector<Event*>(events.size());
+    auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
+    helper.resize(it - helper.begin());
+    events = helper;
+}
+
 void EventCollector::filter_initial_events()
 {
     std::cout << "Starting filtering" << std::endl;
-    
-    auto helper = std::vector<Event*>(events.size());
-    auto it = std::copy_if(events.begin(), events.end(), helper.begin(), [](Event* e) {return e->ntracks == 4;});
-    size_t len = it - helper.begin();
-    helper.resize(len);
+    filter_events([](Event* e) {return e->ntracks == 4;});
+    filter_events([](Event* e) {int j = 0; for (int i = 0; i < 4; ++i) { j+= e->get_particle(0, i)->q;} return j == 0;});
 
-    int rem = 0;
-/*    for (int i = len - 1; i > -1; --i)
-    {
-        int charge = 0;
-        for (int j = 0; i < 4; ++i)
-        {
-            charge += events[i]->get_particle(0, j)->q;
-        }
-        if (charge != 0)
-        {
-            events.erase(events.begin() + i);
-            ++rem;
-        }
-    }
-*/
-    helper.resize(len - rem);
-    events = helper;
     std::cout << "Finished filtering" << std::endl;
 }
 
@@ -91,7 +80,7 @@ void EventCollector::analyze()
 {
     std::cout << "Starting analyzing" << std::endl;
     TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
-    TH1F* h1 = new TH1F("h1", "h1", 400, -20, 20);
+    TH1F* h1 = new TH1F("h1", "h1", 200, -20, 20);
     TCanvas* c1 = new TCanvas("c1", "c1");
 
     for (Event* &event : events)
@@ -101,6 +90,7 @@ void EventCollector::analyze()
 
     h1->Write();
     h1->Draw();
+    c1->SaveAs("hist1.pdf");
     results->Close();
 
     std::cout << "Finished analyzing" << std::endl;
