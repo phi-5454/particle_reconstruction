@@ -59,6 +59,37 @@ void EventCollector::initialize_events()
 }
 
 template <typename F>
+TH1F* EventCollector::create_1Dhistogram(F&& lambda, int bins, float low, float high, std::string title, bool draw)
+{
+    TH1F* hist = new TH1F("h1", title.c_str(), bins, low, high);
+    for (Event* &event : events)
+    {
+        hist->Fill(lambda(event));
+    }
+    if (draw) hist->Draw();
+    return hist;
+}
+
+template <typename F>
+TH1F* EventCollector::create_1Dhistogram(F&& lambda, bool draw)
+{
+    float min = 0;
+    float max = 1;
+    for (Event* &event : events)
+    {
+        if (lambda(event) < min) min = lambda(event);
+        if (lambda(event) > max) max = lambda(event);
+    }
+    return create_1Dhistogram(lambda, round(sqrt(events.size() / 2)), min, max, "A histogram for a fit", draw);
+}
+
+template <typename F>
+TFitResultPtr create_histogram_fit(F&& lambda, std::string distr)
+{
+    return nullptr;
+}
+
+template <typename F>
 void EventCollector::filter_events(F&& lambda)
 {
     auto helper = std::vector<Event*>(events.size());
@@ -79,17 +110,13 @@ void EventCollector::filter_initial_events()
 void EventCollector::analyze()
 {
     std::cout << "Starting analyzing" << std::endl;
+    TCanvas* c1 = new TCanvas("c1", "c1"); 
+    c1->Draw();
     TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
-    TH1F* h1 = new TH1F("h1", "h1", 200, -20, 20);
-    TCanvas* c1 = new TCanvas("c1", "c1");
-
-    for (Event* &event : events)
-    {
-        h1->Fill(event->zPV);
-    }
-
+    TH1F* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true);
+    h1->Fit("gaus");
+//    TH1F* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, 200, -20, 20, "Primary vertex Z position", true);
     h1->Write();
-    h1->Draw();
     c1->SaveAs("hist1.pdf");
     results->Close();
 
