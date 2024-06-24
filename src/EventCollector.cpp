@@ -60,34 +60,58 @@ void EventCollector::initialize_events()
 }
 
 template <typename F>
-TH1F* EventCollector::create_1Dhistogram(F&& lambda, int bins, float low, float high, std::string title, bool draw)
+TH1F* EventCollector::create_1Dhistogram(F&& lambda, int bins, float low, float high, std::string title, bool draw, bool isPart)
 {
     TH1F* hist = new TH1F("h1", title.c_str(), bins, low, high);
     for (Event* &event : events)
     {
-        hist->Fill(lambda(event));
+        if (isPart) 
+        {
+            for (int i = 0; i < 4; ++i) 
+            {
+                hist->Fill(lambda(event->get_particle(0, i)));
+            }
+        }
+        else 
+        {
+            hist->Fill(lambda(event));
+        }
     }
     if (draw) hist->Draw();
     return hist;
 }
 
 template <typename F>
-TH1F* EventCollector::create_1Dhistogram(F&& lambda, bool draw)
+TH1F* EventCollector::create_1Dhistogram(F&& lambda, bool draw, bool isParticle)
+//TODO: Erota kaheksi eri funktioksi eventti ja hiukkanen
 {
     float min = 0;
     float max = 1;
     for (Event* &event : events)
     {
-        if (lambda(event) < min) min = lambda(event);
-        if (lambda(event) > max) max = lambda(event);
+        if (isParticle) 
+        {
+            for (int i = 0; i < 4; ++i) 
+            {
+                auto part = event->get_particle(0, i);
+                auto evpart = lambda(part);
+                if (evpart < min) min = evpart;
+                if (lambda(event->get_particle(0, i)) > max) max = lambda(event->get_particle(0, i));
+            }
+        }
+        else
+        {
+            if (lambda(event) < min) min = lambda(event);
+            if (lambda(event) > max) max = lambda(event);
+        }
     }
-    return create_1Dhistogram(lambda, round(sqrt(events.size() / 2)), min, max, "A histogram for a fit", draw);
+    return create_1Dhistogram(lambda, round(sqrt(events.size() / 2)), min, max, "A histogram for a fit", draw, isParticle);
 }
 
 template <typename F>
 TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, int bins, float low, float high, std::string title, std::string distr)
 {
-    TH1F* h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
+    TH1F* h1 = create_1Dhistogram(lambda, bins, low, high, title, false, false);
     h1->Fit(distr.c_str());
     return h1->GetFunction("gaus");
 }
@@ -95,7 +119,7 @@ TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, int bins, float low, flo
 template <typename F>
 TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, std::string distr)
 {
-    TH1F* h1 = create_1Dhistogram(lambda, false);
+    TH1F* h1 = create_1Dhistogram(lambda, false, false);
     h1->Fit(distr.c_str());
     return h1->GetFunction("gaus");
 }
@@ -142,19 +166,24 @@ void EventCollector::filter_initial_events()
     std::cout << "Filtering events" << std::endl;
     filter_events([](Event* e) {return e->ntracks == 4;});
     filter_events([](Event* e) {int j = 0; for (int i = 0; i < 4; ++i) { j+= e->get_particle(0, i)->q;} return j == 0;});
-
+    filter_events_distribution([](Event* event) {return event->zPV;}, "gaus", 3, false);
     std::cout << "Finished filtering" << std::endl;
 }
 
 void EventCollector::analyze()
 {
     std::cout << "Analyzing events" << std::endl;
-    TCanvas* c1 = new TCanvas("c1", "c1"); 
+    TCanvas* c1 = new TCanvas("c1", "c1");
+    c1->DivideSquare(4);
     c1->Draw();
     TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
-    filter_events_distribution([](Event* event) {return event->zPV;}, "gaus", 1, false);
-    TH1* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true);
-//    h1->Write();
+    c1->cd(1);
+    TH1* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true, false);
+    c1->cd(2);
+    TH1* h2 = create_1Dhistogram([](Particle* part) {return part->dxy;}, true, true);
+    h2->Draw();
+    h1->Write();
+    h2->Write();
     c1->SaveAs("hist1.pdf");
     results->Close();
 
