@@ -13,3 +13,4 @@ src/.vscode/settings.json
 build/src/libEventCollector.a
 build/hist1.pdf
 build/particle_reconstruction
+build/hist0.pdf
