@@ -32,6 +32,26 @@ public:
     void initialize_events();
 
     /**
+     * @brief Finds and returns the lowest and highest values of given lambda function from the events
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be measured
+     * @return float The lowest and highest values of the property
+     */
+    template <typename F>
+    float find_min_max_from_events(F&& lambda);
+
+    /**
+     * @brief Finds and returns the lowest and highest values of given lambda function from the particles
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be measured
+     * @return float The lowest and highest values of the property
+     */
+    template <typename F>
+    float find_min_max_from_particles(F&& lambda);
+
+    /**
      * @brief Create a 1D histogram from events' properties
      * 
      * @tparam F A lambda function
@@ -84,21 +104,10 @@ public:
     TH1F* create_1Dhistogram_from_particles(F&& lambda, bool draw);
 
     /**
-     * @brief Create a histogram and fit it
+     * @brief Create a histogram with a fit from events' properties
      * 
      * @tparam F A lambda function
-     * @param lambda Property to be fitted as a lambda
-     * @param distr The distribution used in the fit
-     * @return TF1* The fitted function 
-     */
-    template <typename F>
-    TF1* create_1Dhistogram_fit(F&& lambda, std::string distr);
-
-    /**
-     * @brief Create a histogram with a fit
-     * 
-     * @tparam F A lambda function
-     * @param lambda Property to be fitted as a lambda
+     * @param lambda Property of event to be fitted as a lambda
      * @param bins Amount of bins
      * @param low Lower limit of bins
      * @param high Upper limit of bins
@@ -107,7 +116,44 @@ public:
      * @return TF1* The fitted function 
      */
     template <typename F>
-    TF1* create_1Dhistogram_fit(F&& lambda, int bins, float low, float high, std::string title, std::string distr);
+    TF1* create_1Dhistogram_fit_from_events(F&& lambda, int bins, float low, float high, std::string title, std::string distr);
+
+    /**
+     * @brief Create a histogram and fit it from events' properties
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property of event to be fitted as a lambda
+     * @param distr The distribution used in the fit
+     * @return TF1* The fitted function 
+     */
+    template <typename F>
+    TF1* create_1Dhistogram_fit_from_events(F&& lambda, std::string distr);
+
+        /**
+     * @brief Create a histogram with a fit from particles' properties
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property of particle to be fitted as a lambda
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param distr The distribution used in the fit
+     * @return TF1* The fitted function 
+     */
+    template <typename F>
+    TF1* create_1Dhistogram_fit_from_particles(F&& lambda, int bins, float low, float high, std::string title, std::string distr);
+
+    /**
+     * @brief Create a histogram and fit it from particles' properties
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property of particle to be fitted as a lambda
+     * @param distr The distribution used in the fit
+     * @return TF1* The fitted function 
+     */
+    template <typename F>
+    TF1* create_1Dhistogram_fit_from_particles(F&& lambda, std::string distr);
 
     /**
      * @brief Filters the events based on the given lambda function
@@ -119,19 +165,16 @@ public:
     void filter_events(F&& lambda);
 
     /**
-     * @brief Filters the events based on the distribution
+     * @brief Filtes the particles based on the given lambda function
      * 
-     * @tparam F A Lambda function
-     * @param lambda The property to be fitted in the histogram that is then fitted
-     * @param distr The distribution function
-     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
-     * @param isPart Whether the property is for each individual particle
+     * @tparam F A lambda function
+     * @param lambda The filter function
      */
     template <typename F>
-    void filter_events_distribution(F&& lambda, std::string distr, float sigma, bool isPart);
+    void filter_particles(F&& lambda);
 
     /**
-     * @brief Filters the events based on the distribution
+     * @brief Filters the events based on the distribution of events' property
      * 
      * @tparam F A Lambda function
      * @param lambda The property to be fitted 
@@ -141,10 +184,46 @@ public:
      * @param low Lower limit of bins
      * @param high Upper limit of bins
      * @param title Title of the histogram
-     * @param isPart Whether the property is for each individual particle
      */
     template <typename F>
-    void filter_events_distribution(F&& lambda, std::string distr, float sigma, int bins, float low, float high, std::string title, bool isPart);
+    void filter_events_distribution_from_events(F&& lambda, std::string distr, float sigma, int bins, float low, float high, std::string title);
+
+    /**
+     * @brief Filters the events based on the distribution of events' property
+     * 
+     * @tparam F A Lambda function
+     * @param lambda The property to be fitted in the histogram that is then fitted
+     * @param distr The distribution function
+     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
+     */
+    template <typename F>
+    void filter_events_distribution_from_events(F&& lambda, std::string distr, float sigma);
+
+    /**
+     * @brief Filters the events based on the distribution of particles' property
+     * 
+     * @tparam F A Lambda function
+     * @param lambda The property to be fitted 
+     * @param distr The distribution function
+     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     */
+    template <typename F>
+    void filter_events_distribution_from_particles(F&& lambda, std::string distr, float sigma, int bins, float low, float high, std::string title);
+
+    /**
+     * @brief Filters the events based on the distribution of particles' property
+     * 
+     * @tparam F A Lambda function
+     * @param lambda The property to be fitted 
+     * @param distr The distribution function
+     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3 sigmas.
+     */
+    template <typename F>
+    void filter_events_distribution_from_particles(F&& lambda, std::string distr, float sigma);
 
     /**
      * @brief Filters the inial events to fit the provided criteria
