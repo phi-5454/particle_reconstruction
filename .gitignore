@@ -14,3 +14,5 @@ build/src/libEventCollector.a
 build/hist1.pdf
 build/particle_reconstruction
 build/hist0.pdf
+.cache/*
+build/*
