@@ -60,58 +60,59 @@ void EventCollector::initialize_events()
 }
 
 template <typename F>
-TH1F* EventCollector::create_1Dhistogram(F&& lambda, int bins, float low, float high, std::string title, bool draw, bool isPart)
+TH1F* EventCollector::create_1Dhistogram_from_events(F&& lambda, int bins, float low, float high, std::string title, bool draw)
 {
     TH1F* hist = new TH1F("h1", title.c_str(), bins, low, high);
-    for (Event* &event : events)
-    {
-        if (isPart) 
-        {
-            for (int i = 0; i < 4; ++i) 
-            {
-                hist->Fill(lambda(event->get_particle(0, i)));
-            }
-        }
-        else 
-        {
-            hist->Fill(lambda(event));
-        }
-    }
+    for (Event* &event : events) hist->Fill(lambda(event));
     if (draw) hist->Draw();
     return hist;
 }
 
 template <typename F>
-TH1F* EventCollector::create_1Dhistogram(F&& lambda, bool draw, bool isParticle)
-//TODO: Erota kaheksi eri funktioksi eventti ja hiukkanen
+TH1F* EventCollector::create_1Dhistogram_from_events(F&& lambda, bool draw)
 {
     float min = 0;
     float max = 1;
     for (Event* &event : events)
     {
-        if (isParticle) 
+        if (lambda(event) < min) min = lambda(event);
+        if (lambda(event) > max) max = lambda(event);
+    }
+    return create_1Dhistogram_from_events(lambda, round(sqrt(events.size() / 2)), min, max, "A histogram for a fit", draw);
+}
+
+template <typename F>
+TH1F* EventCollector::create_1Dhistogram_from_particles(F&& lambda, int bins, float low, float high, std::string title, bool draw)
+{
+    TH1F* hist = new TH1F("hist", title.c_str(), bins, low, high);
+    for (Event* &event : events)
+    {
+        for (int i = 0; i < 4; ++i) hist->Fill(lambda(event->get_particle(0, i)));
+    } 
+    if (draw) hist->Draw();
+    return hist;
+}
+
+template <typename F>
+TH1F* EventCollector::create_1Dhistogram_from_particles(F&& lambda, bool draw)
+{
+    float min = 0;
+    float max = 1;
+    for (Event* &event : events)
+    {
+        for (int i = 0; i < 4; ++i)
         {
-            for (int i = 0; i < 4; ++i) 
-            {
-                auto part = event->get_particle(0, i);
-                auto evpart = lambda(part);
-                if (evpart < min) min = evpart;
-                if (lambda(event->get_particle(0, i)) > max) max = lambda(event->get_particle(0, i));
-            }
-        }
-        else
-        {
-            if (lambda(event) < min) min = lambda(event);
-            if (lambda(event) > max) max = lambda(event);
+            if (lambda(event->get_particle(0, i)) < min) min = lambda(event->get_particle(0, i));
+            if (lambda(event->get_particle(0, i)) > max) max = lambda(event->get_particle(0, i));
         }
     }
-    return create_1Dhistogram(lambda, round(sqrt(events.size() / 2)), min, max, "A histogram for a fit", draw, isParticle);
+    return create_1Dhistogram_from_particles(lambda, round(sqrt(2 * events.size())), min, max, "A histogram for a fit", draw);
 }
 
 template <typename F>
 TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, int bins, float low, float high, std::string title, std::string distr)
 {
-    TH1F* h1 = create_1Dhistogram(lambda, bins, low, high, title, false, false);
+    TH1F* h1 = create_1Dhistogram_from_events(lambda, bins, low, high, title, false);
     h1->Fit(distr.c_str());
     return h1->GetFunction("gaus");
 }
@@ -119,7 +120,7 @@ TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, int bins, float low, flo
 template <typename F>
 TF1* EventCollector::create_1Dhistogram_fit(F&& lambda, std::string distr)
 {
-    TH1F* h1 = create_1Dhistogram(lambda, false, false);
+    TH1F* h1 = create_1Dhistogram_from_events(lambda, false);
     h1->Fit(distr.c_str());
     return h1->GetFunction("gaus");
 }
@@ -173,15 +174,17 @@ void EventCollector::filter_initial_events()
 void EventCollector::analyze()
 {
     std::cout << "Analyzing events" << std::endl;
+    TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
+
     TCanvas* c1 = new TCanvas("c1", "c1");
     c1->DivideSquare(4);
     c1->Draw();
-    TFile* results = TFile::Open(this->results.c_str(), "RECREATE");
+
     c1->cd(1);
-    TH1* h1 = create_1Dhistogram([](Event* event) {return event->zPV;}, true, false);
+    TH1* h1 = create_1Dhistogram_from_events([](Event* event) {return event->zPV;}, 150, -15, 15, "Primary vertex Z position", true);
     c1->cd(2);
-    TH1* h2 = create_1Dhistogram([](Particle* part) {return part->dxy;}, true, true);
-    h2->Draw();
+    TH1* h2 = create_1Dhistogram_from_particles([](Particle* part) {return part->dxy;}, 300, -1.5, 1.5, "Particle distance from primary vertex in xy-plane", true);
+
     h1->Write();
     h2->Write();
     c1->SaveAs("hist1.pdf");

@@ -32,7 +32,7 @@ public:
     void initialize_events();
 
     /**
-     * @brief Create a 1D histogram
+     * @brief Create a 1D histogram from events' properties
      * 
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda for event. Needs to return a float.
@@ -41,23 +41,47 @@ public:
      * @param high Upper limit of bins
      * @param title Title of the histogram
      * @param draw Whether or not to draw the histogram
-     * @param isParticle Whether the property is for each individual particle
      * @return TH1F* 
      */
     template <typename F>
-    TH1F* create_1Dhistogram(F&& lambda, int bins, float low, float high, std::string title, bool draw, bool isParticle);
+    TH1F* create_1Dhistogram_from_events(F&& lambda, int bins, float low, float high, std::string title, bool draw);
 
     /**
-     * @brief Create a 1D histogram for fitting
+     * @brief Create a 1D histogram for fitting from events' properties
      * 
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda for event. Needs to return a float.
      * @param draw Whether or not to draw the histogram
-     * @param isParticle Whether the property is for each individual particle
      * @return TH1F* 
      */
     template <typename F>
-    TH1F* create_1Dhistogram(F&& lambda, bool draw, bool isParticle);
+    TH1F* create_1Dhistogram_from_events(F&& lambda, bool draw);
+
+    /**
+     * @brief Create a 1D histogram from particles' properties
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda for particle. Needs to return a float.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param draw Whether or not to draw the histogram
+     * @return TH1F* 
+     */
+    template <typename F>
+    TH1F* create_1Dhistogram_from_particles(F&& lambda, int bins, float low, float high, std::string title, bool draw);
+
+    /**
+     * @brief Create a 1D histogram for fitting from particles' properties
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda for particle. Needs to return a float.
+     * @param draw Whether or not to draw the histogram
+     * @return TH1F* 
+     */
+    template <typename F>
+    TH1F* create_1Dhistogram_from_particles(F&& lambda, bool draw);
 
     /**
      * @brief Create a histogram and fit it
