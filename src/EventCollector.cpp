@@ -80,7 +80,7 @@ TH1F *EventCollector::create_1Dhistogram(F &&lambda, int bins, float low,
       hist->Fill(value);
   }
   if (draw)
-    hist->Draw();
+    hist->Draw("E");
   return hist;
 }
 
@@ -200,7 +200,7 @@ void EventCollector::analyze(std::string filename) {
         std::vector<float> values = {event->zPV};
         return values;
       },
-      150, -15, 15, "Primary vertex Z position", true);
+      200, -15, 15, "Primary vertex Z position", true);
   c1->cd(2);
   TH1 *h2 = create_1Dhistogram(
       [](Event *event) {
@@ -210,7 +210,7 @@ void EventCollector::analyze(std::string filename) {
         }
         return values;
       },
-      300, -1.5, 1.5, "Particle distance from primary vertex in xy-plane",
+      300, -1, 1, "Particle distance from primary vertex in xy-plane",
       true);
   c1->cd(3);
   TH1 *h3 = create_1Dhistogram(
@@ -221,7 +221,7 @@ void EventCollector::analyze(std::string filename) {
         }
         return values;
       },
-      300, -1.5, 1.5, "Particle distance from primary vertex in xy-plane",
+      300, -1, 1.5, "Particle distance from primary vertex in z-axis",
       true);
   h1->Write();
   h2->Write();
@@ -264,7 +264,7 @@ void EventCollector::analyze_reco(std::string filename) {
         }
         return values;
       },
-      400, 0.2, 2.5, "Mass of recreated particles",
+      200, 0.9, 1.3, "Mass of recreated particles, assumed kaons",
       true);
   h2->Write();
   c1->SaveAs(filename.c_str());
