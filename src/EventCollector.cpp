@@ -15,7 +15,7 @@ EventCollector::EventCollector() {
 void EventCollector::initialize_events() {
 
   std::string infile = this->filepath + "TOTEM20.root";
-  std::string files = this->filepath + "TOTEM20.root?#tree";
+  std::string files = this->filepath + "TOTEM2*.root?#tree";
 
   TFile *h = TFile::Open(infile.c_str());
 
@@ -173,7 +173,7 @@ void EventCollector::filter() {
           values[i] = event->get_particle(0, 0, i)->dxy;
         return values;
       },
-      "gaus", 4, 200, -2, 2, "Title");
+      "gaus", 3, 200, -2, 2, "Title");
   // Particle smallest distance from the primary vertex in z-axis
   std::cout << "Third filter" << std::endl;
   filter_events_distribution(
@@ -183,7 +183,7 @@ void EventCollector::filter() {
           values[i] = event->get_particle(0, 0, i)->dz;
         return values;
       },
-      "gaus", 4);
+      "gaus", 3);
 }
 
 void EventCollector::analyze(std::string filename) {
@@ -256,15 +256,6 @@ void EventCollector::analyze_reco(std::string filename) {
 
   TH1 *h2 = create_1Dhistogram(
       [](Event *event) {
-/*        for (auto &a : event->particles) {
-          for (auto &b : a) {
-            for (auto &c : b) {
-              std::cout << "a ";
-            }
-          std::cout << "\t";
-          }
-          std::cout << std::endl;
-        }*/
         std::vector<float> values(4);
         for (int i = 0; i < 2; ++i) {
           for (int j = 0; j < 2; ++j) {
@@ -273,7 +264,7 @@ void EventCollector::analyze_reco(std::string filename) {
         }
         return values;
       },
-      300, 0, 9, "Mass of recreated particles",
+      400, 0.2, 2.5, "Mass of recreated particles",
       true);
   h2->Write();
   c1->SaveAs(filename.c_str());
