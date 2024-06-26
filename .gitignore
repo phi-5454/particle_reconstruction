@@ -16,3 +16,4 @@ build/particle_reconstruction
 build/hist0.pdf
 .cache/*
 build/*
+src/.vscode/tasks.json

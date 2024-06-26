@@ -80,5 +80,27 @@ public:
      * @return Proton 
      */
     Proton* get_proton(int i);
+
+    /**
+     * @brief Set the masses and energies of the particles
+     * 
+     * @param mass Mass to be given
+     */
+    void set_masses_and_energies(float mass);
+
+    /**
+     * @brief Reconstructs a new particle from two given particles
+     * 
+     * @param p1 First particle
+     * @param p2 Second particle
+     * @return Particle* Reconstructed particle
+     */
+    Particle* reconstruct_particle(Particle* p1, Particle* p2);
+
+    /**
+     * @brief Reconstructs one new particle per two exiting ones and adds them to the particles vector 
+     * 
+     */
+    void reconstruct();
 };
 #endif

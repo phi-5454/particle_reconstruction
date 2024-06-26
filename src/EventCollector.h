@@ -142,9 +142,29 @@ public:
     void analyze(std::string filename);
 
     /**
+     * @brief Analyzes the data of recreated particles
+     * 
+     * @param filename Name of the file (pdf) where the histograms are drawn
+     */
+    void analyze_reco(std::string filename);
+
+    /**
      * @brief Filters the data
      * 
      */
     void filter();
+
+    /**
+     * @brief Initializes the masses of the particles to given value and energy based on the mass
+     * 
+     * @param mass Particle's mass
+     */
+    void init_masses_and_energy(float mass);
+
+    /**
+     * @brief Reconstructs one particle per two particles in an event.
+     * 
+     */
+    void reconstruct_particles();
 };
 #endif

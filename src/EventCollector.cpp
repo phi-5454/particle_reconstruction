@@ -15,7 +15,7 @@ EventCollector::EventCollector() {
 void EventCollector::initialize_events() {
 
   std::string infile = this->filepath + "TOTEM20.root";
-  std::string files = this->filepath + "TOTEM2*.root?#tree";
+  std::string files = this->filepath + "TOTEM20.root?#tree";
 
   TFile *h = TFile::Open(infile.c_str());
 
@@ -42,8 +42,8 @@ void EventCollector::initialize_events() {
   while (myReader.Next()) {
     Event *ev = new Event(*ntrk, *zPV);
     events.push_back(ev);
-    ev->particles.push_back(std::vector<std::vector<Particle*>>{});
-    ev->particles[0].push_back(std::vector<Particle*>{});
+    ev->particles.push_back(std::vector<std::vector<Particle *>>{});
+    ev->particles[0].push_back(std::vector<Particle *>{});
     for (int i = 0; i < *ntrk; ++i) {
       ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0);
     }
@@ -53,7 +53,8 @@ void EventCollector::initialize_events() {
   h->Close();
 }
 
-template <typename F> float EventCollector::find_min_max(F &&lambda) {
+template <typename F> 
+float EventCollector::find_min_max(F &&lambda) {
   float min = HUGE_VALF;
   float max = -HUGE_VALF;
   for (Event *&event : events) {
@@ -164,6 +165,7 @@ void EventCollector::filter() {
       },
       "gaus", 3);
   // Particle smallest distance from the primary vertex in xy-plane
+  std::cout << "Second filter" << std::endl;
   filter_events_distribution(
       [](Event *event) {
         std::vector<float> values(4);
@@ -173,6 +175,7 @@ void EventCollector::filter() {
       },
       "gaus", 4, 200, -2, 2, "Title");
   // Particle smallest distance from the primary vertex in z-axis
+  std::cout << "Third filter" << std::endl;
   filter_events_distribution(
       [](Event *event) {
         std::vector<float> values(4);
@@ -221,6 +224,57 @@ void EventCollector::analyze(std::string filename) {
       300, -1.5, 1.5, "Particle distance from primary vertex in xy-plane",
       true);
   h1->Write();
+  h2->Write();
+  c1->SaveAs(filename.c_str());
+  results->Close();
+
+  std::cout << "Finished analyzing" << std::endl;
+}
+
+void EventCollector::init_masses_and_energy(float mass)
+{
+  for (Event* &event : events) for (int i = 0; i < 4; ++i) 
+  {
+    event->set_masses_and_energies(mass);
+  }
+}
+
+void EventCollector::reconstruct_particles()
+{
+  for (Event* &event : events)
+  {
+    event->reconstruct();
+  }
+}
+
+void EventCollector::analyze_reco(std::string filename) {
+  std::cout << "Analyzing recreated events" << std::endl;
+  TFile *results = TFile::Open(this->results.c_str(), "RECREATE");
+
+  TCanvas *c1 = new TCanvas("c1", "c1");
+  c1->Draw();
+
+  TH1 *h2 = create_1Dhistogram(
+      [](Event *event) {
+/*        for (auto &a : event->particles) {
+          for (auto &b : a) {
+            for (auto &c : b) {
+              std::cout << "a ";
+            }
+          std::cout << "\t";
+          }
+          std::cout << std::endl;
+        }*/
+        std::vector<float> values(4);
+        for (int i = 0; i < 2; ++i) {
+          for (int j = 0; j < 2; ++j) {
+            values[2 * i + j] = event->get_particle(1, i, j)->mass;
+          }
+        }
+        return values;
+      },
+      300, 0, 9, "Mass of recreated particles",
+      true);
   h2->Write();
   c1->SaveAs(filename.c_str());
   results->Close();

@@ -23,6 +23,26 @@ public:
   float E;     // Expected energy of the particle
 
   /**
+   * @brief Construct a new Particle object with known momenta along axis' 
+   * 
+   * @param p Momentum
+   * @param pt Transverse momentun
+   * @param px X component of momentun
+   * @param py Y component of momentum
+   * @param pz Z conponent of momentun
+   * @param eta Pseudorapidity
+   * @param phi Azimuthal angle
+   * @param q Charge
+   * @param dxy Assumed deviation from the primary vertex in xy-plane
+   * @param dz Assumed deviation from the primary vertex in z-axis
+   * @param mass Mass
+   * @param E Energy
+   */
+
+  Particle(float p, float pt, float px, float py, float pz, float eta, float phi,
+           int q, float dxy, float dz, float mass, float E);
+
+  /**
    * @brief Construct a new Particle object with mass.
    *
    * @param p trk_p
@@ -61,21 +81,18 @@ public:
    *
    */
   void calculate_mass();
+  
+  /**
+   * @brief Calculate the total momentum
+   * 
+   */
+  void calculate_momentum();
 
   /**
-   * @brief Initiates a particle object and calculates its attributes
-   *
-   * @param p trk_p
-   * @param pt trk_pt
-   * @param eta trk_eta
-   * @param phi trk_phi
-   * @param q trk_q
-   * @param dxy trk_dxy
-   * @param dz trk_dz
-   * @param mass expected mass of the particle
+   * @brief Prints the particle information
+   * 
    */
-  void init_particle(float p, float pt, float eta, float phi, int q, float dxy,
-                     float dz, float mass);
+  void print();
 
 private:
   /**
@@ -90,4 +107,6 @@ private:
    */
   void calculate_theta();
 };
+
+  
 #endif
