@@ -73,23 +73,29 @@ void Event::reconstruct()
     std::vector<std::vector<Particle *>> init_particles = particles[particles.size() - 1];
     particles.push_back(std::vector<std::vector<Particle*>>{});
 
+    for (auto &a : init_particles) if (a.size() != 4) std::cout << a.size() << std::endl;
+
     for (int j = 0; j < init_particles.size(); ++j)
     { 
-        for (int i = 0; i < init_particles[0].size() - 1; ++i)
+        for (int i = 1; i < init_particles[0].size(); ++i)
         {
             if (init_particles[0].size() == 2)
             {
                 Particle* part = reconstruct_particle(init_particles[j][i], init_particles[j][i + 1]);
                 particles[particles.size() - 1].push_back(std::vector<Particle *>{part});
             }
-            else
-            {
-                Particle* part1 = reconstruct_particle(init_particles[j][i], init_particles[j][i + 1]); /*Works only with <=4 particles*/
-                Particle* part2 = reconstruct_particle(init_particles[j][(i + 2) % 4], init_particles[j][(i + 3) % 4]);
-                if (part1->q ==0 && part2->q == 0) {
-                    particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
-                }
-            }
         }
+        Particle* part1 = reconstruct_particle(init_particles[j][0], init_particles[j][1]);
+        Particle* part2 = reconstruct_particle(init_particles[j][2], init_particles[j][3]);
+        particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+
+        part1 = reconstruct_particle(init_particles[j][0], init_particles[j][2]);
+        part2 = reconstruct_particle(init_particles[j][1], init_particles[j][3]);
+        particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+
+        part1 = reconstruct_particle(init_particles[j][0], init_particles[j][3]);
+        part2 = reconstruct_particle(init_particles[j][1], init_particles[j][2]);
+        particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
     }
+    
 }
