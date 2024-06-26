@@ -12,7 +12,7 @@ class Event
 {
 public:
     int ntracks; // Amount of particles in the event, not including protons
-    std::vector<std::vector<Particle*>> particles; // The particles, initial and reconstructed, associated with an event
+    std::vector<std::vector<std::vector<Particle *>>> particles; // The particles, initial and reconstructed, associated with an event
     std::vector<Proton*> protons; // The protons associated with an event
     float zPV; // Z coordinate of the primary vertex of the event
 
@@ -35,9 +35,10 @@ public:
      * @param dxy trk_dxy
      * @param dz trk_dz
      * @param mass Expected mass of the particle
-     * @param i Particle's iteration level 
+     * @param i Particle's iteration level
+     * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, int i);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, int i, int j);
 
     /**
      * @brief Adds a particle without mass to the event
@@ -50,8 +51,9 @@ public:
      * @param dxy trk_dxy
      * @param dz trk_dz
      * @param i Particle's iteration level
+     * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, int i);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, int i, int j);
 
     /**
      * @brief Adds a proton to the event
@@ -62,21 +64,14 @@ public:
     void add_proton(float Thx, float Thy);
 
     /**
-     * @brief Removes a particle from the event 
+     * @brief Get the particle object at location [i][j][k]
      * 
      * @param i Particle's iteration level
-     * @param j Particle's position in the vector
-     */
-    void remove_particle(int i, int j);
-
-    /**
-     * @brief Get the particle object at location [i][j]
-     * 
-     * @param i Particle's iteration level
-     * @param j Particle's position in the vector
+     * @param j Particles' permutation
+     * @param k Particle's position in the vector
      * @return Particle 
      */
-    Particle* get_particle(int i, int j);
+    Particle* get_particle(int i, int j, int k);
 
     /**
      * @brief Get the proton object

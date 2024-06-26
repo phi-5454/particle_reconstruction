@@ -41,10 +41,11 @@ void EventCollector::initialize_events() {
 
   while (myReader.Next()) {
     Event *ev = new Event(*ntrk, *zPV);
-    this->events.push_back(ev);
-    ev->particles.push_back(std::vector<Particle *>{});
+    events.push_back(ev);
+    ev->particles.push_back(std::vector<std::vector<Particle*>>{});
+    ev->particles[0].push_back(std::vector<Particle*>{});
     for (int i = 0; i < *ntrk; ++i) {
-      ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0);
+      ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0);
     }
   }
   std::cout << "Finished initializing events" << std::endl;
@@ -105,7 +106,8 @@ TF1 *EventCollector::create_1Dhistogram_fit(F &&lambda, std::string distr) {
                                 max, "A histogram for a fit", distr);
 }
 
-template <typename F> void EventCollector::filter_events(F &&lambda) {
+template <typename F>
+void EventCollector::filter_events(F &&lambda) {
   auto helper = std::vector<Event *>(events.size());
   auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
   helper.resize(it - helper.begin());
@@ -146,7 +148,7 @@ void EventCollector::filter_initial_events() {
   filter_events([](Event *e) {
     int j = 0;
     for (int i = 0; i < 4; ++i) {
-      j += e->get_particle(0, i)->q;
+      j += e->get_particle(0, 0, i)->q;
     }
     return j == 0;
   });
@@ -166,7 +168,7 @@ void EventCollector::filter() {
       [](Event *event) {
         std::vector<float> values(4);
         for (int i = 0; i < 4; ++i)
-          values[i] = event->get_particle(0, i)->dxy;
+          values[i] = event->get_particle(0, 0, i)->dxy;
         return values;
       },
       "gaus", 4, 200, -2, 2, "Title");
@@ -175,7 +177,7 @@ void EventCollector::filter() {
       [](Event *event) {
         std::vector<float> values(4);
         for (int i = 0; i < 4; ++i)
-          values[i] = event->get_particle(0, i)->dz;
+          values[i] = event->get_particle(0, 0, i)->dz;
         return values;
       },
       "gaus", 4);
@@ -201,7 +203,7 @@ void EventCollector::analyze(std::string filename) {
       [](Event *event) {
         std::vector<float> values(4);
         for (int i = 0; i < 4; ++i) {
-          values[i] = event->get_particle(0, i)->dxy;
+          values[i] = event->get_particle(0, 0, i)->dxy;
         }
         return values;
       },
@@ -212,7 +214,7 @@ void EventCollector::analyze(std::string filename) {
       [](Event *event) {
         std::vector<float> values(4);
         for (int i = 0; i < 4; ++i) {
-          values[i] = event->get_particle(0, i)->dz;
+          values[i] = event->get_particle(0, 0, i)->dz;
         }
         return values;
       },
