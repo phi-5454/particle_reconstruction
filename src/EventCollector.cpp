@@ -264,7 +264,7 @@ void EventCollector::analyze_reco(std::string filename) {
         }
         return values;
       },
-      200, 0.9, 1.3, "Mass of recreated particles, assumed kaons",
+      200, 0.25, 1.3, "Mass of recreated particles, assumed kaons",
       true);
   h2->Write();
   c1->SaveAs(filename.c_str());

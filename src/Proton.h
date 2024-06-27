@@ -21,14 +21,6 @@ public:
      */
     Proton(float Thx, float Thy);
 
-    /**
-     * @brief Creates a proton and calculates its momenta
-     * 
-     * @param Thx ThxL/R
-     * @param Thy ThyL/R
-     */
-    void initialize_proton(float Thx, float Thy);
-
 private:
     /**
      * @brief Calculate the x and y components of the momentum
