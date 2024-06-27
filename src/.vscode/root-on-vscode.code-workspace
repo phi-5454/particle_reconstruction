@@ -81,7 +81,9 @@
       "streambuf": "cpp",
       "thread": "cpp",
       "typeinfo": "cpp",
-      "variant": "cpp"
+      "variant": "cpp",
+      "data.C": "cpp",
+      "fstream": "cpp"
     },
     "C_Cpp.default.includePath": [
       "${default}",

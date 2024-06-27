@@ -11,5 +11,5 @@ Proton::Proton(float Thx, float Thy)
 void Proton::calculate_momenta()
 {
     px = Thx * p;
-    py = Thy * p;
+    py = -Thy * p; /*Minus to make the axis directions the same as in CMS tracker*/
 }

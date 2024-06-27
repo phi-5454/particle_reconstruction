@@ -7,13 +7,13 @@ int main(int argc, char** argv)
 
     evc.initialize_events();
     evc.filter_initial_events();
-//    evc.init_masses_and_energy(0.13957039);
-    evc.init_masses_and_energy(0.493667);
-    evc.analyze("hist0.pdf");
+    evc.init_masses_and_energy(0.13957039);
+//    evc.init_masses_and_energy(0.493667);
+//    evc.analyze("hist1");
     evc.filter();
-    evc.analyze("hist2.pdf");
+//    evc.analyze("hist2");
     evc.reconstruct_particles();
-    evc.analyze_reco("hist1.pdf");
+    evc.analyze_reco("hist3");
 
     return 0;
 }
