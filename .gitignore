@@ -20,3 +20,4 @@ build/*
 src/.vscode/tasks.json
 res.root
 cmake-build-debug/*
+*.root
