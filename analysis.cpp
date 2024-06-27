@@ -9,11 +9,11 @@ int main(int argc, char** argv)
     evc.filter_initial_events();
     evc.init_masses_and_energy(0.13957039);
 //    evc.init_masses_and_energy(0.493667);
-//    evc.analyze("hist1");
+    evc.analyze("hist1");
     evc.filter();
-//    evc.analyze("hist2");
-    evc.reconstruct_particles();
-    evc.analyze_reco("hist3");
+    evc.analyze("hist2");
+//    evc.reconstruct_particles();
+//    evc.analyze_reco("hist3");
 
     return 0;
 }

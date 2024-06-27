@@ -17,7 +17,6 @@ class EventCollector {
 public:
     std::string filepath =
             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
-    /*/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT*/
      std::string results =
      "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root";
     //std::string results = "../res.root";

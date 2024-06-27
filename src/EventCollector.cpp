@@ -14,7 +14,7 @@ EventCollector::EventCollector() {
 
 void EventCollector::initialize_events() {
   // std::string infile = this->filepath + "TOTEM20.root";
-   std::string files = this->filepath + "TOTEM43.root?#tree";
+   std::string files = this->filepath + "TOTEM2*.root?#tree";
   //std::string files = "../TOTEM20.root?#tree";
 
   // TFile *h = TFile::Open(infile.c_str());
