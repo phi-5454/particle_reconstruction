@@ -3,7 +3,8 @@
 #include <iostream>
 
 Particle::Particle(float p, float pt, float px, float py, float pz, float eta,
-                   float phi, int q, float dxy, float dz, float mass, float E)
+                   float phi, int q, float dxy, float dz, float mass, float E,
+                   float ptErr, float dxyErr, float dzErr)
                    {
   this->p = p;
   this->pt = pt;
@@ -17,17 +18,22 @@ Particle::Particle(float p, float pt, float px, float py, float pz, float eta,
   this->dz = dz;
   this->mass = mass;
   this->E = E;
+  this->ptErr = ptErr;
+  this->dxyErr = dxyErr;
+  this->dzErr = dzErr;
 
   this->calculate_theta();
 }
 
 Particle::Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz,
-                   float mass) : Particle(p, pt, 0, 0, 0, eta, phi, q, dxy, dz, mass, 0) {
+                   float mass, float ptErr, float dxyErr, float dzErr) : Particle(
+                    p, pt, 0, 0, 0, eta, phi, q, dxy, dz, mass, 0, ptErr, dxyErr, dzErr) {
   this->calculate_momenta();
 }
 
 Particle::Particle(float p, float pt, float eta, float phi, int q, float dxy,
-                   float dz) : Particle(p, pt, 0, 0, 0, eta, phi, q, dxy, dz, 0, 0) {
+                   float dz, float ptErr, float dxyErr, float dzErr) : Particle(
+                    p, pt, 0, 0, 0, eta, phi, q, dxy, dz, 0, 0, ptErr, dxyErr, dzErr) {
   this->calculate_momenta();
 }
 

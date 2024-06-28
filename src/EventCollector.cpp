@@ -12,9 +12,12 @@ EventCollector::EventCollector() {
   // empty
 }
 
-void EventCollector::initialize_events() {
+void EventCollector::initialize_events(bool isNew) {
   // std::string infile = this->filepath + "TOTEM20.root";
    std::string files = this->filepath + "TOTEM2*.root?#tree";
+   if (isNew) {
+    files = this->filepath + "TOTEM*.root?#tree";
+   }
   //std::string files = "../TOTEM20.root?#tree";
 
   // TFile *h = TFile::Open(infile.c_str());
@@ -37,15 +40,34 @@ void EventCollector::initialize_events() {
   TTreeReaderValue<Float_t> ThyR(myReader, "ThyR");
   TTreeReaderValue<Float_t> ThyL(myReader, "ThyL");
 
+/*  TTreeReaderValue<Float_t> xPV(myReader, "xPV");
+  TTreeReaderValue<Float_t> yPV(myReader, "yPV");
+  TTreeReaderArray<Float_t> dxyErr(myReader, "trk_dxyerr");
+  TTreeReaderArray<Float_t> dzErr(myReader, "trk_dzerr");
+  TTreeReaderArray<Float_t> ptErr(myReader, "trk_pterr");
+*/
   std::cout << "Initializing events" << std::endl;
 
   while (myReader.Next()) {
-    Event *ev = new Event(*ntrk, *zPV);
+    Event *ev;
+    if (isNew) {
+//      ev = new Event(*ntrk, *zPV, *xPV, *yPV);
+    }
+    else {
+      ev = new Event(*ntrk, *zPV);
+    }
     events.push_back(ev);
     ev->particles.push_back(std::vector<std::vector<Particle *>>{});
     ev->particles[0].push_back(std::vector<Particle *>{});
-    for (int i = 0; i < *ntrk; ++i) {
-      ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0);
+    if (isNew) {
+      for (int i = 0; i < *ntrk; ++i) {
+//        ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], ptErr[i], dxyErr[i], dzErr[i], 0, 0);
+      }
+    }
+     else {
+      for (int i = 0; i < *ntrk; ++i) {
+        ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0, 0, 0, 0);
+      }
     }
     ev->add_proton(*ThxR, *ThyR);
     ev->add_proton(*ThxL, *ThyL);
@@ -400,6 +422,79 @@ void EventCollector::analyze(std::string filename) {
   results->Close();
 
   std::cout << "Finished analyzing" << std::endl;
+}
+
+void EventCollector::analyze_new(std::string filename) {
+  TFile *results = TFile::Open(this->results.c_str(), "RECREATE");
+
+  TCanvas *c1 = new TCanvas("c1", "c1");
+  c1->DivideSquare(4);
+  c1->Draw();
+
+  c1->cd(1);
+  TH1 *h1 = create_1Dhistogram(
+      [](Event *event) {
+        std::vector<float> values = {event->xPV};
+        return values;
+      },
+      20, 0.06, 0.14, "Primary vertex X position", true);
+
+  c1->cd(2);
+  TH1 *h2 = create_1Dhistogram(
+      [](Event *event) {
+        std::vector<float> values = {event->yPV};
+        return values;
+      },
+      20, 0.08, 0.16, "Primary vertex Y position", true);
+
+  c1->cd(3);
+  TH1 *h3 = create_1Dhistogram(
+    [](Event *event) {
+      std::vector<float> values(4);
+      for (int i = 0; i < 4; ++i) {
+        values[i] = event->get_particle(0, 0, i)->dz / event->get_particle(0, 0, i)->dzErr;
+      }
+      return values;
+    },
+    50, -5, 5, "dz divided by dzErr", true);
+
+  c1->cd(4);
+  TH1 *h4 = create_1Dhistogram(
+    [](Event *event) {
+      std::vector<float> values(4);
+      for (int i = 0; i < 4; ++i) {
+        values[i] = event->get_particle(0, 0, i)->dxy / event->get_particle(0, 0, i)->dxyErr;
+      }
+      return values;
+    },
+    50, -5, 5, "dxy divided by dxyErr", true);
+
+  TCanvas *c2 = new TCanvas("c2", "c2");
+  c2->DivideSquare(4);
+  c2->Draw();
+  c2->cd(1);
+
+  TH1 *h5 = create_1Dhistogram(
+    [](Event *event) {
+      std::vector<float> values(4);
+      for (int i = 0; i < 4; ++i) {
+        values[i] = event->get_particle(0, 0, i)->pt / event->get_particle(0, 0, i)->ptErr;
+      }
+      return values;
+    },
+    100, 0, 100, "pt divided by ptErr", true);
+
+  c2->cd(2);
+  TH1 *h6 = create_1Dhistogram(
+      [](Event *event) {
+        std::vector<float> values = {(float)sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
+        return values;
+      },
+      30, 0.12, 0.18, "Primary vertex R position", true);
+
+  c1->SaveAs((filename + "A.pdf").c_str());
+  c2->SaveAs((filename + "B.pdf").c_str());
+  results->Close();
 }
 
 void EventCollector::init_masses_and_energy(float mass) {

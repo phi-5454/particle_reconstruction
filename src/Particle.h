@@ -8,6 +8,7 @@ class Particle {
 public:
   float p;     // Momentum
   float pt;    // Transverse (= perpendicular to the beam) momentum
+  float ptErr; // Transverse momentum error
   float px;    // X component of momentum, towards the center of the ring
   float py;    // Y component of momentum, "upwards"
   float pz;    // Z component of momentum, parallel to the beam
@@ -17,8 +18,10 @@ public:
   int q;       // Charge
   float dxy;   // Particle's track's smallest deviation in xy-plane from the
                // primary vertex
+  float dxyErr;// xy-deviation error
   float dz;    // Particle's track's smallest deviation along z-axis from the
                // primary vertex
+  float dzErr; // z-deviation error
   float mass;  // Expected invariant mass of the particle
   float E;     // Expected energy of the particle
 
@@ -37,10 +40,13 @@ public:
    * @param dz Assumed deviation from the primary vertex in z-axis
    * @param mass Mass
    * @param E Energy
+   * @param ptErr Transerse momentim error
+   * @param dxyErr xy-deviation error
+   * @param dzErr z-deviation error
    */
 
   Particle(float p, float pt, float px, float py, float pz, float eta, float phi,
-           int q, float dxy, float dz, float mass, float E);
+           int q, float dxy, float dz, float mass, float E, float ptErr, float dxyErr, float dzErr);
 
   /**
    * @brief Construct a new Particle object with mass.
@@ -53,9 +59,12 @@ public:
    * @param dxy trk_dxy
    * @param dz trk_dz
    * @param mass expected mass of the particle
+   * @param ptErr Transerse momentim error
+   * @param dxyErr xy-deviation error
+   * @param dzErr z-deviation error
    */
   Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz,
-           float mass);
+           float mass, float ptErr, float dxyErr, float dzErr);
 
   /**
    * @brief Construct a new Particle object without mass
@@ -67,8 +76,12 @@ public:
    * @param q trk_q
    * @param dxy trk_dxy
    * @param dz trk_dz
+   * @param ptErr Transerse momentim error
+   * @param dxyErr xy-deviation error
+   * @param dzErr z-deviation error
    */
-  Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz);
+  Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz,
+           float ptErr, float dxyErr, float dzErr);
 
   /**
    * @brief Calculate the energy of the particle

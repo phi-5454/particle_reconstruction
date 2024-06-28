@@ -5,23 +5,31 @@
 #include "Particle.h"
 #include "Proton.h"
 
-Event::Event(int ntracks, float zPV)
-{
+Event::Event(int ntracks, float zPV, float xPV, float yPV) {
     this->ntracks = ntracks;
     this->zPV = zPV;
+    this->xPV = xPV;
+    this->yPV = yPV;
     this->particles = std::vector<std::vector<std::vector<Particle *>>>{};
     this->protons = std::vector<Proton *>{};
 }
 
-void Event::add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, int i, int j)
+Event::Event(int ntracks, float zPV) : Event(ntracks, zPV, 0, 0)
 {
-    Particle* part = new Particle(p, pt, eta, phi, q, dxy, dz, mass);
+    // empty
+}
+
+void Event::add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, float ptErr,
+                      float dxyErr, float dzErr, int i, int j)
+{
+    Particle* part = new Particle(p, pt, eta, phi, q, dxy, dz, mass, ptErr, dxyErr, dzErr);
     particles[i][j].push_back(part);
 }
 
-void Event::add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, int i, int j)
+void Event::add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float ptErr,
+                      float dxyErr, float dzErr, int i, int j)
 {
-    add_particle(p, pt, eta, phi, q, dxy, dz, 0, i, j);
+    add_particle(p, pt, eta, phi, q, dxy, dz, 0, ptErr, dxyErr, dzErr, i, j);
 }
 
 void Event::add_proton(float Thx, float Thy)
@@ -65,7 +73,7 @@ Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
     float dxy = sqrt(pow(p1->dxy, 2) + pow(p2->dxy, 2));
     float dz = sqrt(pow(p1->dz, 2) + pow(p2->dz, 2));
 
-    return new Particle(p, pt, px, py, pz, eta, phi, q, dxy, dz, mass, E);
+    return new Particle(p, pt, px, py, pz, eta, phi, q, dxy, dz, mass, E, 0, 0, 0);
 }
 
 void Event::reconstruct()

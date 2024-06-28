@@ -15,6 +15,18 @@ public:
     std::vector<std::vector<std::vector<Particle *>>> particles; // The particles, initial and reconstructed, associated with an event
     std::vector<Proton*> protons; // The protons associated with an event
     float zPV; // Z coordinate of the primary vertex of the event
+    float xPV; // X coordinate of the primary vertex of the event
+    float yPV; // Y coordinate of the primary vertex of the event
+
+    /**
+     * @brief Construct a new Event object
+     * 
+     * @param ntracks ntrk
+     * @param zPV zPV
+     * @param xPV xPV
+     * @param yPV yPV
+     */
+    Event(int ntracks, float zPV, float xPV, float yPV);
 
     /**
      * @brief Construct a new Event object
@@ -35,10 +47,14 @@ public:
      * @param dxy trk_dxy
      * @param dz trk_dz
      * @param mass Expected mass of the particle
+     * @param ptErr trk_pterr
+     * @param dxyErr trk_dxyerr
+     * @param dzErr trk_dzerr
      * @param i Particle's iteration level
      * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass, int i, int j);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass,
+                      float ptErr, float dxyErr, float dzErr, int i, int j);
 
     /**
      * @brief Adds a particle without mass to the event
@@ -50,10 +66,14 @@ public:
      * @param q trk_q
      * @param dxy trk_dxy
      * @param dz trk_dz
+     * @param ptErr trk_pterr
+     * @param dxyErr trk_dxyerr
+     * @param dzErr trk_dzerr
      * @param i Particle's iteration level
      * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, int i, int j);
+    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float ptErr,
+                      float dxyErr, float dzErr, int i, int j);
 
     /**
      * @brief Adds a proton to the event

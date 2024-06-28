@@ -14,9 +14,10 @@
  */
 class EventCollector {
 public:
-    std::string filepath =
-            //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/";
-            "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
+//    std::string filepath =
+//            "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
+//    std::string filepath =
+//            "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/";
      std::string results =
      "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root";
     //std::string results = "../res.root";
@@ -31,8 +32,9 @@ public:
     /**
      * @brief Creates and assings all the events (and thus particles)
      *
+     * @param isNew Whether the used data is new or old
      */
-    void initialize_events();
+    void initialize_events(bool isNew);
 
     /**
      * @brief Finds and returns the lowest and highest values of given lambda
@@ -182,6 +184,13 @@ public:
      * @param filename Name of the file (pdf) where the histograms are drawn
      */
     void analyze(std::string filename);
+
+    /**
+     * @brief Analyzes the data through the new variables 
+     *
+     * @param filename Name of the file (pdf) where the histograms are drawn
+     */
+    void analyze_new(std::string filename);
 
     /**
      * @brief Analyzes the data of recreated particles
