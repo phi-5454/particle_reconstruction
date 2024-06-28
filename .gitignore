@@ -10,10 +10,6 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 src/.vscode/settings.json
-build/src/libEventCollector.a
-build/hist1.pdf
-build/particle_reconstruction
-build/hist0.pdf
 .cache/*
 build/*
 .idea/*

@@ -14,9 +14,9 @@ public:
     int ntracks; // Amount of particles in the event, not including protons
     std::vector<std::vector<std::vector<Particle *>>> particles; // The particles, initial and reconstructed, associated with an event
     std::vector<Proton*> protons; // The protons associated with an event
-    float zPV; // Z coordinate of the primary vertex of the event
-    float xPV; // X coordinate of the primary vertex of the event
-    float yPV; // Y coordinate of the primary vertex of the event
+    double zPV; // Z coordinate of the primary vertex of the event
+    double xPV; // X coordinate of the primary vertex of the event
+    double yPV; // Y coordinate of the primary vertex of the event
 
     /**
      * @brief Construct a new Event object
@@ -26,7 +26,7 @@ public:
      * @param xPV xPV
      * @param yPV yPV
      */
-    Event(int ntracks, float zPV, float xPV, float yPV);
+    Event(int ntracks, double zPV, double xPV, double yPV);
 
     /**
      * @brief Construct a new Event object
@@ -34,7 +34,7 @@ public:
      * @param ntracks ntrk
      * @param zPV zPV
      */
-    Event(int ntracks, float zPV);
+    Event(int ntracks, double zPV);
 
     /**
      * @brief Adds a particle with mass to the event
@@ -53,8 +53,8 @@ public:
      * @param i Particle's iteration level
      * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float mass,
-                      float ptErr, float dxyErr, float dzErr, int i, int j);
+    void add_particle(double p, double pt, double eta, double phi, int q, double dxy, double dz, double mass,
+                      double ptErr, double dxyErr, double dzErr, int i, int j);
 
     /**
      * @brief Adds a particle without mass to the event
@@ -72,8 +72,8 @@ public:
      * @param i Particle's iteration level
      * @param j Particles' permutation
      */
-    void add_particle(float p, float pt, float eta, float phi, int q, float dxy, float dz, float ptErr,
-                      float dxyErr, float dzErr, int i, int j);
+    void add_particle(double p, double pt, double eta, double phi, int q, double dxy, double dz, double ptErr,
+                      double dxyErr, double dzErr, int i, int j);
 
     /**
      * @brief Adds a proton to the event
@@ -81,7 +81,7 @@ public:
      * @param Thx ThxL/R
      * @param Thy ThyL/R
      */
-    void add_proton(float Thx, float Thy);
+    void add_proton(double Thx, double Thy);
 
     /**
      * @brief Get the particle object at location [i][j][k]
@@ -106,7 +106,7 @@ public:
      * 
      * @param mass Mass to be given
      */
-    void set_masses_and_energies(float mass);
+    void set_masses_and_energies(double mass);
 
     /**
      * @brief Reconstructs a new particle from two given particles

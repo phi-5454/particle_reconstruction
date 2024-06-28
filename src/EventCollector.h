@@ -14,8 +14,8 @@
  */
 class EventCollector {
 public:
-//    std::string filepath =
-//            "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
+    std::string filepath =
+            "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
 //    std::string filepath =
 //            "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/";
      std::string results =
@@ -42,16 +42,16 @@ public:
      *
      * @tparam F A lambda function
      * @param lambda Property to be measured
-     * @return float The lowest and highest values of the property
+     * @return double The lowest and highest values of the property
      */
-    template <typename F> std::tuple<float, float> find_min_max(F &&lambda);
+    template <typename F> std::tuple<double, double> find_min_max(F &&lambda);
 
     /**
      * @brief Create a 1D histogram
      *
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda for event. Needs to return
-     * a vector of floats.
+     * a vector of doubles.
      * @param bins Amount of bins
      * @param low Lower limit of bins
      * @param high Upper limit of bins
@@ -60,7 +60,7 @@ public:
      * @return TH1F*
      */
     template <typename F>
-    TH1F *create_1Dhistogram(F &&lambda, int bins, float low, float high,
+    TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high,
                              std::string title, bool draw);
 
     /**
@@ -68,7 +68,7 @@ public:
      *
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda for event. Needs to return
-     * a vector of floats.
+     * a vector of doubles.
      * @param draw Whether or not to draw the histogram
      * @return TH1F*
      */
@@ -87,7 +87,7 @@ public:
      * @return TF1* The fitted function
      */
     template <typename F>
-    TF1 *create_1Dhistogram_fit(F &&lambda, int bins, float low, float high,
+    TF1 *create_1Dhistogram_fit(F &&lambda, int bins, double low, double high,
                                 std::string title, std::string distr);
 
     /**
@@ -107,8 +107,8 @@ public:
      *
      * @tparam F lambda function type
      * @param lambda_x Property to be fitted as a lambda for event on x axis. Needs to return
-     * a vector of floats.
-     * @param lambda_x Property to be fitted as a lambda for event on y axis. Needs to return a vector of floats
+     * a vector of doubles.
+     * @param lambda_x Property to be fitted as a lambda for event on y axis. Needs to return a vector of doubles
      * @param bins Amount of bins
      * @param low Lower limit of bins
      * @param high Upper limit of bins
@@ -117,8 +117,8 @@ public:
      * @return TH2F*
      */
     template <typename F1, typename F2>
-    TH2F *create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_x, float low_x, float high_x,
-                             int bins_y, float low_y, float high_y,
+    TH2F *create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_x, double low_x, double high_x,
+                             int bins_y, double low_y, double high_y,
                              const std::string& title, bool draw);
 
 
@@ -127,7 +127,7 @@ public:
      *
      * @tparam F A lambda function
      * @param lambda Property to be fitted as a lambda for event. Needs to return
-     * a vector of floats.
+     * a vector of doubles.
      * @param draw Whether or not to draw the histogram
      * @return TH1F*
      */
@@ -155,8 +155,8 @@ public:
      * @param title Title of the histogram
      */
     template <typename F>
-    void filter_events_distribution(F &&lambda, std::string distr, float sigma,
-                                    int bins, float low, float high,
+    void filter_events_distribution(F &&lambda, std::string distr, double sigma,
+                                    int bins, double low, double high,
                                     std::string title);
 
     /**
@@ -170,7 +170,7 @@ public:
      * sigmas.
      */
     template <typename F>
-    void filter_events_distribution(F &&lambda, std::string distr, float sigma);
+    void filter_events_distribution(F &&lambda, std::string distr, double sigma);
 
     /**
      * @brief Filters the inial events to fit the provided criteria
@@ -206,12 +206,18 @@ public:
     void filter();
 
     /**
+     * @brief Filters the data again
+     *
+     */
+    void filter2();
+
+    /**
      * @brief Initializes the masses of the particles to given value and energy
      * based on the mass
      *
      * @param mass Particle's mass
      */
-    void init_masses_and_energy(float mass);
+    void init_masses_and_energy(double mass);
 
     /**
      * @brief Reconstructs one particle per two particles in an event.

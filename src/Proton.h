@@ -7,11 +7,11 @@
 class Proton
 {
 public:
-    const float p = 6500; // Momentum of the photon. We assume the change is basically nonexistant and stays the same after the collition
-    float Thx; // Scattering angle on the xz-plane
-    float Thy; // Scattering angle on the yz-plane
-    float px; // X component of momentum
-    float py; // Y component of momentum
+    const double p = 6500; // Momentum of the photon. We assume the change is basically nonexistant and stays the same after the collition
+    double Thx; // Scattering angle on the xz-plane
+    double Thy; // Scattering angle on the yz-plane
+    double px; // X component of momentum
+    double py; // Y component of momentum
 
     /**
      * @brief Construct a new Proton object
@@ -19,7 +19,7 @@ public:
      * @param Thx ThxL/R
      * @param Thy ThyL/R
      */
-    Proton(float Thx, float Thy);
+    Proton(double Thx, double Thy);
 
 private:
     /**

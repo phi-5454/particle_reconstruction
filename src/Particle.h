@@ -6,24 +6,24 @@
  */
 class Particle {
 public:
-  float p;     // Momentum
-  float pt;    // Transverse (= perpendicular to the beam) momentum
-  float ptErr; // Transverse momentum error
-  float px;    // X component of momentum, towards the center of the ring
-  float py;    // Y component of momentum, "upwards"
-  float pz;    // Z component of momentum, parallel to the beam
-  float eta;   // Pseudorapidity
-  float theta; // Scattering angle, from z-axis.
-  float phi;   // Azimuthal angle, from positive x-axis
+  double p;     // Momentum
+  double pt;    // Transverse (= perpendicular to the beam) momentum
+  double ptErr; // Transverse momentum error
+  double px;    // X component of momentum, towards the center of the ring
+  double py;    // Y component of momentum, "upwards"
+  double pz;    // Z component of momentum, parallel to the beam
+  double eta;   // Pseudorapidity
+  double theta; // Scattering angle, from z-axis.
+  double phi;   // Azimuthal angle, from positive x-axis
   int q;       // Charge
-  float dxy;   // Particle's track's smallest deviation in xy-plane from the
+  double dxy;   // Particle's track's smallest deviation in xy-plane from the
                // primary vertex
-  float dxyErr;// xy-deviation error
-  float dz;    // Particle's track's smallest deviation along z-axis from the
+  double dxyErr;// xy-deviation error
+  double dz;    // Particle's track's smallest deviation along z-axis from the
                // primary vertex
-  float dzErr; // z-deviation error
-  float mass;  // Expected invariant mass of the particle
-  float E;     // Expected energy of the particle
+  double dzErr; // z-deviation error
+  double mass;  // Expected invariant mass of the particle
+  double E;     // Expected energy of the particle
 
   /**
    * @brief Construct a new Particle object with known momenta along axis' 
@@ -45,8 +45,8 @@ public:
    * @param dzErr z-deviation error
    */
 
-  Particle(float p, float pt, float px, float py, float pz, float eta, float phi,
-           int q, float dxy, float dz, float mass, float E, float ptErr, float dxyErr, float dzErr);
+  Particle(double p, double pt, double px, double py, double pz, double eta, double phi,
+           int q, double dxy, double dz, double mass, double E, double ptErr, double dxyErr, double dzErr);
 
   /**
    * @brief Construct a new Particle object with mass.
@@ -63,8 +63,8 @@ public:
    * @param dxyErr xy-deviation error
    * @param dzErr z-deviation error
    */
-  Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz,
-           float mass, float ptErr, float dxyErr, float dzErr);
+  Particle(double p, double pt, double eta, double phi, int q, double dxy, double dz,
+           double mass, double ptErr, double dxyErr, double dzErr);
 
   /**
    * @brief Construct a new Particle object without mass
@@ -80,8 +80,8 @@ public:
    * @param dxyErr xy-deviation error
    * @param dzErr z-deviation error
    */
-  Particle(float p, float pt, float eta, float phi, int q, float dxy, float dz,
-           float ptErr, float dxyErr, float dzErr);
+  Particle(double p, double pt, double eta, double phi, int q, double dxy, double dz,
+           double ptErr, double dxyErr, double dzErr);
 
   /**
    * @brief Calculate the energy of the particle

@@ -1,6 +1,6 @@
 #include "Proton.h"
 
-Proton::Proton(float Thx, float Thy)
+Proton::Proton(double Thx, double Thy)
 {
     this->Thx = Thx;
     this->Thy = Thy;
