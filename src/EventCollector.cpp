@@ -364,6 +364,29 @@ void EventCollector::analyze(std::string filename) {
           "Proton px vs. py",
           true);
 
+  TCanvas* c3 = new TCanvas("c3", "c3");
+  c3->Draw();
+
+  auto l9 = [](Event *event) {
+    std::vector<float> values(4);
+    for (int i = 0; i < 4; ++i) {
+      values[i] = event->get_particle(0, 0, i)->dxy;
+    }
+    return values;
+  };
+
+  auto l10 = [](Event *event) {
+    std::vector<float> values(4);
+    for (int i = 0; i < 4; ++i) {
+      values[i] = event->get_particle(0, 0, i)->phi;
+    }
+    return values;
+  };
+
+  TH2 *h8 = create_2Dhistogram(
+            l9, l10, 200, -1, 1, 200, -3.2, 3.2,
+            "Particle dxy vs. phi", true);
+  
   h1->Write();
   h2->Write();
   h3->Write();
@@ -373,6 +396,7 @@ void EventCollector::analyze(std::string filename) {
   h7->Write();
   c1->SaveAs((filename + "A.pdf").c_str());
   c2->SaveAs((filename + "B.pdf").c_str());
+  c3->SaveAs((filename + "C.pdf").c_str());
   results->Close();
 
   std::cout << "Finished analyzing" << std::endl;

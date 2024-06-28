@@ -2,7 +2,6 @@
 #define EVENTCOLLECTOR_H
 
 #include "Event.h"
-#include "TFitResultPtr.h"
 #include "TH1.h"
 #include "TH2.h"
 #include <string>
@@ -16,6 +15,7 @@
 class EventCollector {
 public:
     std::string filepath =
+            //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/";
             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
      std::string results =
      "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root";
