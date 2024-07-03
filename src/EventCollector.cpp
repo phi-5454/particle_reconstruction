@@ -8,22 +8,15 @@
 #include "TTreeReaderArray.h"
 #include <string>
 
-EventCollector::EventCollector() {
-  // empty
+EventCollector::EventCollector(std::string in, std::string out) {
+  this->filepath = in;
+  this->results = out;
 }
 
 void EventCollector::initialize_events(bool isNew) {
-  // std::string infile = this->filepath + "TOTEM20.root";
-   std::string files = this->filepath + "TOTEM20.root?#tree";
-   if (isNew) {
-    files = this->filepath + "TOTEM*.root?#tree";
-   }
-  //std::string files = "../TOTEM20.root?#tree";
-
-  // TFile *h = TFile::Open(infile.c_str());
   TChain *chain = new TChain("hugetree");
 
-  chain->Add(files.c_str());
+  chain->Add(this->filepath.c_str());
 
   TTreeReader myReader(chain);
   TTreeReaderValue<float> zPV(myReader, "zPV");
@@ -195,83 +188,6 @@ void EventCollector::filter_events_distribution(F &&lambda, std::string distr,
     filter_events_distribution(lambda, distr, sigmaMulti,
                                round(sqrt((double)events.size() / 2)), min, max,
                                "A histogram for a fit");
-}
-
-void EventCollector::filter_initial_events() {
-  std::cout << "Filtering events" << std::endl;
-  filter_events([](Event *e) { return e->ntracks == 4; });
-  filter_events([](Event *e) {
-    int j = 0;
-    for (int i = 0; i < 4; ++i) {
-      j += e->get_particle(0, 0, i)->q;
-    }
-    return j == 0;
-  });
-/*  filter_events([](Event *e) {
-    double px1 = 0;
-    double px2 = 0;
-    for (int i = 0; i < 4; ++i) {
-      px1 += e->get_particle(0, 0, i)->px;
-    }
-    for (int i = 0; i < 2; ++i) {
-      px2 += e->get_proton(i)->px;
-    }
-    return (std::abs(px1 - px2) < 0.15);
-  });
-  filter_events([](Event *e) {
-    double py1 = 0;
-    double py2 = 0;
-    for (int i = 0; i < 4; ++i) {
-      py1 += e->get_particle(0, 0, i)->py;
-    }
-    for (int i = 0; i < 2; ++i) {
-      py2 += e->get_proton(i)->py;
-    }
-    return (std::abs(py1 - py2) < 0.15);
-  });*/
-  std::cout << "Finished filtering" << std::endl;
-}
-
-void EventCollector::filter() {
-  // Primary vertex Z position
-  filter_events_distribution(
-      [](Event *event) {
-        std::vector<double> values = {event->zPV};
-        return values;
-      },
-      "gaus", 3);
-  // Particle smallest distance from the primary vertex in xy-plane
-  std::cout << "Second filter" << std::endl;
-  filter_events_distribution(
-      [](Event *event) {
-        std::vector<double> values(4);
-        for (int i = 0; i < 4; ++i)
-          values[i] = event->get_particle(0, 0, i)->dxy;
-        return values;
-      },
-      "gaus", 3, 200, -2, 2, "Title");
-  // Particle smallest distance from the primary vertex in z-axis
-  std::cout << "Third filter" << std::endl;
-  filter_events_distribution(
-      [](Event *event) {
-        std::vector<double> values(4);
-        for (int i = 0; i < 4; ++i)
-          values[i] = event->get_particle(0, 0, i)->dz;
-        return values;
-      },
-      "gaus", 3, 200, -3, 3, "Title");
-}
-
-void EventCollector::filter2() {
-  filter_events_distribution(
-    [](Event *event) {
-      std::vector<double> values(4);
-      for (int i = 0; i < 2; ++i)
-        for (int j = 0; j < 2; ++j)
-          values[2 * i + j] = event->get_particle(1, i, j)->mass;
-      return values;
-    },
-    "gaus", 2, 200, 0.8, 1.2, "Title");
 }
 
 void EventCollector::analyze(std::string filename) {

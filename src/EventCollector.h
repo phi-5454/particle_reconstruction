@@ -14,20 +14,17 @@
  */
 class EventCollector {
 public:
-    std::string filepath =
-            "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/";
-//    std::string filepath =
-//            "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/";
-     std::string results =
-     "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root";
-    //std::string results = "../res.root";
+    std::string filepath;
+    std::string results;
     std::vector<Event *> events;
 
     /**
      * @brief Construct a new Event Collector object
      *
+     * @param input The path to the data file/s with trees
+     * @param output The path to the created .root file and histograms
      */
-    EventCollector();
+    EventCollector(std::string input, std::string output);
 
     /**
      * @brief Creates and assings all the events (and thus particles)
@@ -173,12 +170,6 @@ public:
     void filter_events_distribution(F &&lambda, std::string distr, double sigma);
 
     /**
-     * @brief Filters the inial events to fit the provided criteria
-     *
-     */
-    void filter_initial_events();
-
-    /**
      * @brief Analyzes the data
      *
      * @param filename Name of the file (pdf) where the histograms are drawn
@@ -198,18 +189,6 @@ public:
      * @param filename Name of the file (pdf) where the histograms are drawn
      */
     void analyze_reco(std::string filename);
-
-    /**
-     * @brief Filters the data
-     *
-     */
-    void filter();
-
-    /**
-     * @brief Filters the data again
-     *
-     */
-    void filter2();
 
     /**
      * @brief Initializes the masses of the particles to given value and energy
