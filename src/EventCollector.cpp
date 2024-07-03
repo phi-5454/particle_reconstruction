@@ -70,61 +70,6 @@ void EventCollector::initialize_events(bool isNew) {
   // h->Close();
 }
 
-template <typename F> std::tuple<double, double> EventCollector::find_min_max(F &&lambda) {
-  double min = HUGE_VALF;
-  double max = -HUGE_VALF;
-  for (Event *&event : events) {
-    std::vector<double> values = lambda(event);
-    for (double value : values) {
-      if (value < min)
-        min = value;
-      if (value > max)
-        max = value;
-    }
-  }
-  return std::make_tuple(min, max);
-}
-
-/// 1D Histograms
-
-template <typename F>
-TH1F *EventCollector::create_1Dhistogram(F &&lambda, int bins, double low,
-                                         double high, std::string title,
-                                         bool draw) {
-  TH1F *hist = new TH1F("hist", title.c_str(), bins, low, high);
-  for (Event *&event : events) {
-    std::vector<double> values = lambda(event);
-    for (double value : values)
-      hist->Fill(value);
-  }
-  if (draw)
-    hist->Draw("E");
-  return hist;
-}
-
-template <typename F>
-TH1F *EventCollector::create_1Dhistogram(F &&lambda, bool draw) {
-  auto [min, max] = find_min_max(lambda);
-  return create_1Dhistogram(lambda, round(sqrt(2 * events.size())), min, max,
-                            "A histogram for a fit", draw);
-}
-
-template <typename F>
-TF1 *EventCollector::create_1Dhistogram_fit(F &&lambda, int bins, double low,
-                                            double high, std::string title,
-                                            std::string distr) {
-  TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
-  h1->Fit(distr.c_str());
-  return h1->GetFunction(distr.c_str());
-}
-
-template <typename F>
-TF1 *EventCollector::create_1Dhistogram_fit(F &&lambda, std::string distr) {
-  auto [min, max] = find_min_max(lambda);
-  return create_1Dhistogram_fit(lambda, round(sqrt(events.size() / 2)), min,
-                                max, "A histogram for a fit", distr);
-}
-
 /// 2D Histograms
 
 template <typename F1, typename F2>
@@ -153,41 +98,6 @@ TH2F *EventCollector::create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, const std
     return create_2Dhistogram(lambda_x, lambda_y, round(pow(2 * events.size(), 0.5)), min_x, max_x,
                               round(pow(2 * events.size(), 0.5)), min_y, max_y,
                               title, draw);
-}
-
-template <typename F> void EventCollector::filter_events(F &&lambda) {
-  auto helper = std::vector<Event *>(events.size());
-  auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
-  helper.resize(it - helper.begin());
-  events = helper;
-}
-
-template <typename F>
-void EventCollector::filter_events_distribution(F &&lambda, std::string distr,
-                                                double sigmaMulti, int bins,
-                                                double low, double high,
-                                                std::string title) {
-  TF1 *fit = create_1Dhistogram_fit(lambda, bins, low, high, title, distr);
-  double mean = fit->GetParameter("Mean");
-  double sigma = fit->GetParameter("Sigma");
-  filter_events([&](Event *event) {
-    std::vector<double> values = lambda(event);
-    for (double value : values) {
-      if (value < mean - sigmaMulti * sigma ||
-          value > mean + sigmaMulti * sigma)
-        return false;
-    }
-    return true;
-  });
-}
-
-template <typename F>
-void EventCollector::filter_events_distribution(F &&lambda, std::string distr,
-                                                double sigmaMulti) {
-    auto [min, max]= find_min_max(lambda);
-    filter_events_distribution(lambda, distr, sigmaMulti,
-                               round(sqrt((double)events.size() / 2)), min, max,
-                               "A histogram for a fit");
 }
 
 void EventCollector::analyze(std::string filename) {

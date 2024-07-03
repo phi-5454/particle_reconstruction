@@ -4,6 +4,7 @@
 #include "Event.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TF1.h"
 #include <string>
 #include <vector>
 
@@ -41,7 +42,20 @@ public:
      * @param lambda Property to be measured
      * @return double The lowest and highest values of the property
      */
-    template <typename F> std::tuple<double, double> find_min_max(F &&lambda);
+    template <typename F> std::tuple<double, double> find_min_max(F &&lambda) {
+        double min = HUGE_VALF;
+        double max = -HUGE_VALF;
+        for (Event *&event : events) {
+            std::vector<double> values = lambda(event);
+            for (double value : values) {
+            if (value < min)
+                min = value;
+            if (value > max)
+                max = value;
+            }
+        }
+        return std::make_tuple(min, max);
+    };
 
     /**
      * @brief Create a 1D histogram
@@ -58,7 +72,17 @@ public:
      */
     template <typename F>
     TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high,
-                             std::string title, bool draw);
+                             std::string title, bool draw) {
+          TH1F *hist = new TH1F("hist", title.c_str(), bins, low, high);
+        for (Event *&event : events) {
+            std::vector<double> values = lambda(event);
+            for (double value : values)
+            hist->Fill(value);
+        }
+        if (draw)
+            hist->Draw("E");
+        return hist;
+    };
 
     /**
      * @brief Create a 1D histogram for fitting
@@ -69,7 +93,11 @@ public:
      * @param draw Whether or not to draw the histogram
      * @return TH1F*
      */
-    template <typename F> TH1F *create_1Dhistogram(F &&lambda, bool draw);
+    template <typename F> TH1F *create_1Dhistogram(F &&lambda, bool draw) {
+        auto [min, max] = find_min_max(lambda);
+        return create_1Dhistogram(lambda, round(sqrt(2 * events.size())), min, max,
+                                  "A histogram for a fit", draw);
+    };
 
     /**
      * @brief Create a histogram with a fit
@@ -85,7 +113,11 @@ public:
      */
     template <typename F>
     TF1 *create_1Dhistogram_fit(F &&lambda, int bins, double low, double high,
-                                std::string title, std::string distr);
+                                std::string title, std::string distr) {
+        TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
+        h1->Fit(distr.c_str());
+        return h1->GetFunction(distr.c_str());
+    };
 
     /**
      * @brief Create a histogram with a fit
@@ -96,7 +128,11 @@ public:
      * @return TF1* The fitted function
      */
     template <typename F>
-    TF1 *create_1Dhistogram_fit(F &&lambda, std::string distr);
+    TF1 *create_1Dhistogram_fit(F &&lambda, std::string distr) {
+        auto [min, max] = find_min_max(lambda);
+        return create_1Dhistogram_fit(lambda, round(sqrt(events.size() / 2)), min,
+                                      max, "A histogram for a fit", distr);
+    };
 
 
     /**
@@ -136,7 +172,12 @@ public:
      * @tparam F A lambda function
      * @param lambda The filter function
      */
-    template <typename F> void filter_events(F &&lambda);
+    template <typename F> void filter_events(F &&lambda) {
+        auto helper = std::vector<Event *>(events.size());
+        auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
+        helper.resize(it - helper.begin());
+        events = helper;
+    };
 
     /**
      * @brief Filters the events based on the distribution
@@ -144,7 +185,7 @@ public:
      * @tparam F A Lambda function
      * @param lambda The property to be fitted
      * @param distr The distribution function
-     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3
+     * @param sigmaMulti The selected area around mean value, +- sigmas. Eg. 3 = -+ 3
      * sigmas.
      * @param bins Amount of bins
      * @param low Lower limit of bins
@@ -152,9 +193,22 @@ public:
      * @param title Title of the histogram
      */
     template <typename F>
-    void filter_events_distribution(F &&lambda, std::string distr, double sigma,
+    void filter_events_distribution(F &&lambda, std::string distr, double sigmaMulti,
                                     int bins, double low, double high,
-                                    std::string title);
+                                    std::string title) {
+        TF1 *fit = create_1Dhistogram_fit(lambda, bins, low, high, title, distr);
+        double mean = fit->GetParameter("Mean");
+        double sigma = fit->GetParameter("Sigma");
+        filter_events([&](Event *event) {
+            std::vector<double> values = lambda(event);
+            for (double value : values) {
+            if (value < mean - sigmaMulti * sigma ||
+                value > mean + sigmaMulti * sigma)
+                return false;
+            }
+            return true;
+        });
+    };
 
     /**
      * @brief Filters the events based on the distribution
@@ -163,11 +217,16 @@ public:
      * @param lambda The property to be fitted in the histogram that is then
      * fitted
      * @param distr The distribution function
-     * @param sigma The selected area around mean value, +- sigmas. Eg. 3 = -+ 3
+     * @param sigmaMulti The selected area around mean value, +- sigmas. Eg. 3 = -+ 3
      * sigmas.
      */
     template <typename F>
-    void filter_events_distribution(F &&lambda, std::string distr, double sigma);
+    void filter_events_distribution(F &&lambda, std::string distr, double sigmaMulti) {
+        auto [min, max]= find_min_max(lambda);
+        filter_events_distribution(lambda, distr, sigmaMulti,
+                                   round(sqrt((double)events.size() / 2)), min, max,
+                                   "A histogram for a fit");
+    };
 
     /**
      * @brief Analyzes the data
