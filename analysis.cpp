@@ -3,16 +3,16 @@
 
 int main()
 {
-    EventCollector evc("/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree",
-                       "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
-//                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/"
+    EventCollector evc(
+                     "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
+//                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
+                       ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     evc.initialize_events(false);
 
     std::cout << "Filtering events" << std::endl;
 
-    auto l1 = [](Event *e) { return e->ntracks == 4; };
-    evc.filter_events(l1);
+    evc.filter_events([](Event *e) { return e->ntracks == 4; });
     evc.filter_events([](Event *e) {
         int j = 0;
         for (int i = 0; i < 4; ++i) {
@@ -51,12 +51,11 @@ int main()
 
     std::cout << "Finished filtering" << std::endl;
 
-    evc.init_masses_and_energy(0.13957039);
+//    evc.init_masses_and_energy(0.13957039);
 
-//    evc.init_masses_and_energy(0.493667);
+    evc.init_masses_and_energy(0.493667);
 //    evc.analyze("hist11");
 //    evc.analyze_new("hist21");
-//    evc.filter();
 //    evc.analyze("hist12");
 //    evc.analyze_new("hist22");
 

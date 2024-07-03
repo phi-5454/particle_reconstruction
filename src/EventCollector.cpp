@@ -370,10 +370,14 @@ void EventCollector::analyze_reco(std::string filename) {
 
   TH2 *h2 = create_2Dhistogram([](Event* event) {return std::vector<double>{event->get_particle(1, 0, 0)->mass, event->get_particle(1, 1, 1)->mass};},
                                [](Event* event) {return std::vector<double>{event->get_particle(1, 1, 0)->mass, event->get_particle(1, 0, 1)->mass};},
-                               400, 0, 2, 400, 0, 2, "Masses of two recreated particles", true);
+                               100, 1, 1.5, 100, 1, 1.5, "Masses of two recreated particles", true);
+/*    TH1 *h2 = create_1Dhistogram([](Event* event) {return std::vector<double>{event->get_particle(2, 0, 0)->mass,
+                                 event->get_particle(2, 1, 0)->mass};}, 50, 1.5, 2.5, "Glueball", true );*/
   h2->Write();
 
   TH1 *h3 = h2->ProjectionX();
+  TH1 *h4 = h2->ProjectionY();
+  h3->Add(h4);
   h3->Draw("E");
   c1->SaveAs((filename + ".pdf").c_str());
   results->Close();
