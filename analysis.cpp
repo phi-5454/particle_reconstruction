@@ -1,7 +1,7 @@
 #include "EventCollector.h"
 #include <iostream>
 
-int main(int argc, char** argv)
+int main()
 {
     EventCollector evc("/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree",
                        "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
@@ -11,7 +11,8 @@ int main(int argc, char** argv)
 
     std::cout << "Filtering events" << std::endl;
 
-    evc.filter_events([](Event *e) { return e->ntracks == 4; });
+    auto l1 = [](Event *e) { return e->ntracks == 4; };
+    evc.filter_events(l1);
     evc.filter_events([](Event *e) {
         int j = 0;
         for (int i = 0; i < 4; ++i) {
@@ -27,8 +28,8 @@ int main(int argc, char** argv)
             return values;
         },
         "gaus", 3);
+
     // Particle smallest distance from the primary vertex in xy-plane
-    std::cout << "Second filter" << std::endl;
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
@@ -37,8 +38,8 @@ int main(int argc, char** argv)
             return values;
         },
         "gaus", 3, 200, -2, 2, "Title");
+
     // Particle smallest distance from the primary vertex in z-axis
-    std::cout << "Third filter" << std::endl;
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
@@ -48,9 +49,9 @@ int main(int argc, char** argv)
         },
         "gaus", 3, 200, -3, 3, "Title");
 
-    evc.init_masses_and_energy(0.13957039);
-
     std::cout << "Finished filtering" << std::endl;
+
+    evc.init_masses_and_energy(0.13957039);
 
 //    evc.init_masses_and_energy(0.493667);
 //    evc.analyze("hist11");
