@@ -17,6 +17,7 @@ public:
     double zPV; // Z coordinate of the primary vertex of the event
     double xPV; // X coordinate of the primary vertex of the event
     double yPV; // Y coordinate of the primary vertex of the event
+    long EventNum; // Event number
 
     /**
      * @brief Construct a new Event object
@@ -25,16 +26,18 @@ public:
      * @param zPV zPV
      * @param xPV xPV
      * @param yPV yPV
+     * @param eventNum EventNum
      */
-    Event(int ntracks, double zPV, double xPV, double yPV);
+    Event(int ntracks, double zPV, double xPV, double yPV, long eventNum);
 
     /**
      * @brief Construct a new Event object
      * 
      * @param ntracks ntrk
      * @param zPV zPV
+     * @param eventNum EventNum
      */
-    Event(int ntracks, double zPV);
+    Event(int ntracks, double zPV, long eventNum);
 
     /**
      * @brief Adds a particle with mass to the event
@@ -122,5 +125,12 @@ public:
      * 
      */
     void reconstruct();
+
+    /**
+     * @brief Prints info of the event
+     * 
+     */
+    void print();
+
 };
 #endif

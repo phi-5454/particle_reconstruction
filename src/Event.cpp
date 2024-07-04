@@ -5,16 +5,17 @@
 #include "Particle.h"
 #include "Proton.h"
 
-Event::Event(int ntracks, double zPV, double xPV, double yPV) {
+Event::Event(int ntracks, double zPV, double xPV, double yPV, long eventNum) {
     this->ntracks = ntracks;
     this->zPV = zPV;
     this->xPV = xPV;
     this->yPV = yPV;
+    this->EventNum = eventNum;
     this->particles = std::vector<std::vector<std::vector<Particle *>>>{};
     this->protons = std::vector<Proton *>{};
 }
 
-Event::Event(int ntracks, double zPV) : Event(ntracks, zPV, 0, 0)
+Event::Event(int ntracks, double zPV, long eventNum) : Event(ntracks, zPV, 0, 0, eventNum)
 {
     // empty
 }
@@ -88,18 +89,34 @@ void Event::reconstruct()
             particles[particles.size() - 1].push_back(std::vector<Particle *>{part});
         }
         else {
+            int n = 0;
             Particle* part1 = reconstruct_particle(init_particles[j][0], init_particles[j][1]);
             Particle* part2 = reconstruct_particle(init_particles[j][2], init_particles[j][3]);
-            particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+            if (part1->q == 0 && part2->q == 0) { 
+                particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+                n++;
+            }
 
             part1 = reconstruct_particle(init_particles[j][0], init_particles[j][2]);
             part2 = reconstruct_particle(init_particles[j][1], init_particles[j][3]);
-            particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+            if (part1->q == 0 && part2->q == 0) {
+                particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+                n++;
+            }
 
             part1 = reconstruct_particle(init_particles[j][0], init_particles[j][3]);
             part2 = reconstruct_particle(init_particles[j][1], init_particles[j][2]);
-            particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+            if (part1->q == 0 && part2->q == 0) {
+                particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+                n++;
+            }
+            if (n != 2) std::cout << "Väärin meni" << std::endl;
         }
     }
-    
+}
+
+void Event::print() {
+    std::cout << "A new event" << " " << this->EventNum << std::endl;
+    for (int i = 0; i < 4; ++i)
+        std::cout << this->particles[0][0][i]->p << "\t" << this->particles[0][0][i]->E << std::endl;
 }

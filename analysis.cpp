@@ -4,8 +4,8 @@
 int main()
 {
     EventCollector evc(
-//                     "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
-                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
+                     "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM20.root?#tree"
+//                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
                        ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     evc.initialize_events(false);

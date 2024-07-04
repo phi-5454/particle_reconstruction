@@ -21,6 +21,7 @@ void EventCollector::initialize_events(bool isNew) {
   TTreeReader myReader(chain);
   TTreeReaderValue<float> zPV(myReader, "zPV");
   TTreeReaderValue<Int_t> ntrk(myReader, "ntrk");
+  TTreeReaderValue<unsigned long long> eventN(myReader, "EventNum");
   TTreeReaderArray<float> p(myReader, "trk_p");
   TTreeReaderArray<float> pt(myReader, "trk_pt");
   TTreeReaderArray<float> eta(myReader, "trk_eta");
@@ -44,10 +45,10 @@ void EventCollector::initialize_events(bool isNew) {
   while (myReader.Next()) {
     Event *ev;
     if (isNew) {
-//      ev = new Event(*ntrk, *zPV, *xPV, *yPV);
+//      ev = new Event(*ntrk, *zPV, *xPV, *yPV, *eventN);
     }
     else {
-      ev = new Event(*ntrk, *zPV);
+      ev = new Event(*ntrk, *zPV, *eventN);
     }
     events.push_back(ev);
     ev->particles.push_back(std::vector<std::vector<Particle *>>{});
@@ -345,6 +346,12 @@ void EventCollector::init_masses_and_energy(double mass) {
 void EventCollector::reconstruct_particles() {
   for (Event *&event : events) {
     event->reconstruct();
+    if (event->EventNum > 500050000 && event->EventNum < 500100000) {
+      event->print();
+      for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 2; ++j)
+          event->particles[1][i][j]->print();
+    }
   }
 }
 

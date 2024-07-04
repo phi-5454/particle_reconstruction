@@ -53,5 +53,5 @@ void Particle::calculate_energy() { E = sqrt(pow(mass, 2) + pow(p, 2)); }
 
 void Particle::print()
 {
-  std::cout << this->dxy << "\t" << this->p << std::endl;
+  std::cout << this->p << "\t" << this->E << std::endl;
 }
