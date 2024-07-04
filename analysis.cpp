@@ -4,8 +4,8 @@
 int main()
 {
     EventCollector evc(
-                     "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
-//                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
+//                     "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
+                     "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
                        ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     evc.initialize_events(false);
@@ -20,7 +20,7 @@ int main()
         }
         return j == 0;
     });
-
+/*
     // Primary vertex Z position
     evc.filter_events_distribution(
         [](Event *event) {
@@ -48,12 +48,12 @@ int main()
             return values;
         },
         "gaus", 3, 200, -3, 3, "Title");
-
+*/
     std::cout << "Finished filtering" << std::endl;
 
-//    evc.init_masses_and_energy(0.13957039);
+    evc.init_masses_and_energy(0.13957039);
 
-    evc.init_masses_and_energy(0.493667);
+//    evc.init_masses_and_energy(0.493667);
 //    evc.analyze("hist11");
 //    evc.analyze_new("hist21");
 //    evc.analyze("hist12");

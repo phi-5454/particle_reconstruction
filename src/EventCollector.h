@@ -174,8 +174,15 @@ public:
      */
     template <typename F> void filter_events(F &&lambda) {
         auto helper = std::vector<Event *>(events.size());
-        auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
-        helper.resize(it - helper.begin());
+        for (auto &n : events) {
+            std::cout << n->zPV << std::endl;
+            if(lambda(n)) {
+                std::cout << "hei" << std::endl;
+                helper.push_back(n);
+            }
+        }
+//        auto it = std::copy_if(events.begin(), events.end(), helper.begin(), lambda);
+//        helper.resize(it - helper.begin());
         events = helper;
     };
 
