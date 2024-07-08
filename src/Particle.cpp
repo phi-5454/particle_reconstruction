@@ -40,7 +40,7 @@ Particle::Particle(double p, double pt, double eta, double phi, int q, double dx
 void Particle::calculate_momenta() {
   px = cos(phi) * pt;
   py = sin(phi) * pt;
-  pz = sqrt(pow(p, 2) - pow(pt, 2));
+  pz = sinh(eta) * pt;
 }
 
 void Particle::calculate_momentum() { p = sqrt(pow(px, 2) + pow(py, 2) + pow(pz, 2)); }
@@ -54,4 +54,5 @@ void Particle::calculate_energy() { E = sqrt(pow(mass, 2) + pow(p, 2)); }
 void Particle::print()
 {
   std::cout << this->p << "\t" << this->E << std::endl;
+  std::cout << this->mass << std::endl;
 }

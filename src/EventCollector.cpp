@@ -40,7 +40,6 @@ void EventCollector::initialize_events(bool isNew) {
   TTreeReaderArray<float> dzErr(myReader, "trk_dzerr");
   TTreeReaderArray<float> ptErr(myReader, "trk_pterr");
 */
-  std::cout << "Initializing events" << std::endl;
 
   while (myReader.Next()) {
     Event *ev;
@@ -66,9 +65,6 @@ void EventCollector::initialize_events(bool isNew) {
     ev->add_proton(*ThxR, *ThyR);
     ev->add_proton(*ThxL, *ThyL);
   }
-  std::cout << "Finished initializing events" << std::endl;
-
-  // h->Close();
 }
 
 /// 2D Histograms
@@ -81,7 +77,6 @@ TH2F *EventCollector::create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_
     for (Event *&event : events) {
         std::vector<double> values_x = lambda_x(event);
         std::vector<double> values_y = lambda_y(event);
-        // Ass. len(values_x) == len(values_y)
         for (int i = 0; i < values_x.size(); ++i) {
             hist->Fill(values_x[i], values_y[i]);
         }
@@ -102,7 +97,6 @@ TH2F *EventCollector::create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, const std
 }
 
 void EventCollector::analyze(std::string filename) {
-  std::cout << "Analyzing events" << std::endl;
   TFile *results = TFile::Open(this->results.c_str(), "RECREATE");
 
   TCanvas *c1 = new TCanvas("c1", "c1");
@@ -259,8 +253,6 @@ void EventCollector::analyze(std::string filename) {
   c2->SaveAs((filename + "B.pdf").c_str());
   c3->SaveAs((filename + "C.pdf").c_str());
   results->Close();
-
-  std::cout << "Finished analyzing" << std::endl;
 }
 
 void EventCollector::analyze_new(std::string filename) {
@@ -338,7 +330,7 @@ void EventCollector::analyze_new(std::string filename) {
 
 void EventCollector::init_masses_and_energy(double mass) {
   for (Event *&event : events)
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < event->ntracks; ++i) {
       event->set_masses_and_energies(mass);
     }
 }
@@ -346,7 +338,7 @@ void EventCollector::init_masses_and_energy(double mass) {
 void EventCollector::reconstruct_particles() {
   for (Event *&event : events) {
     event->reconstruct();
-    if (event->EventNum > 500050000 && event->EventNum < 500100000) {
+    if (event->EventNum == (long)500088828) {
       event->print();
       for (int i = 0; i < 2; ++i)
         for (int j = 0; j < 2; ++j)
@@ -362,7 +354,7 @@ void EventCollector::analyze_reco(std::string filename) {
   TCanvas *c1 = new TCanvas("c1", "c1");
 
   c1->Draw();
-/*  TH1 *h1 = create_1Dhistogram(
+  TH1 *h1 = create_1Dhistogram(
       [](Event *event) {
         std::vector<double> values(4);
         for (int i = 0; i < 2; ++i) {
@@ -372,20 +364,20 @@ void EventCollector::analyze_reco(std::string filename) {
         }
         return values;
       },
-      200, 0.25, 1, "Mass of recreated particles, assumed pions",
-      true);*/
+      140, 0.8, 1.5, "Mass of recreated particles, assumed pions",
+      true);
 
   TH2 *h2 = create_2Dhistogram([](Event* event) {return std::vector<double>{event->get_particle(1, 0, 0)->mass, event->get_particle(1, 1, 1)->mass};},
                                [](Event* event) {return std::vector<double>{event->get_particle(1, 1, 0)->mass, event->get_particle(1, 0, 1)->mass};},
-                               400, 0, 2, 400, 0, 2, "Masses of two recreated particles", true);
+                               250, 0, 2, 250, 0, 2, "Masses of two recreated particles", true);
 /*    TH1 *h2 = create_1Dhistogram([](Event* event) {return std::vector<double>{event->get_particle(2, 0, 0)->mass,
-                                 event->get_particle(2, 1, 0)->mass};}, 50, 1.5, 2.5, "Glueball", true );*/
+                                 event->get_particle(2, 1, 0)->mass};}, 100, 1.5, 2.5, "Glueball", true );*/
   h2->Write();
 
   TH1 *h3 = h2->ProjectionX();
   TH1 *h4 = h2->ProjectionY();
   h3->Add(h4);
-  h3->Draw("E");
+  h1->Draw();
   c1->SaveAs((filename + ".pdf").c_str());
   results->Close();
 
