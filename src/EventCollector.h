@@ -77,7 +77,7 @@ public:
         for (Event *&event : events) {
             std::vector<double> values = lambda(event);
             for (double value : values)
-            hist->Fill(value);
+                hist->Fill(value);
         }
         if (draw)
             hist->Draw("E");
@@ -114,7 +114,7 @@ public:
     template <typename F>
     TF1 *create_1Dhistogram_fit(F &&lambda, int bins, double low, double high,
                                 std::string title, std::string distr) {
-        TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
+        TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, true);
         h1->Fit(distr.c_str());
         return h1->GetFunction(distr.c_str());
     };

@@ -34,17 +34,17 @@ void EventCollector::initialize_events(bool isNew) {
   TTreeReaderValue<float> ThyR(myReader, "ThyR");
   TTreeReaderValue<float> ThyL(myReader, "ThyL");
 
-/*  TTreeReaderValue<float> xPV(myReader, "xPV");
+  TTreeReaderValue<float> xPV(myReader, "xPV");
   TTreeReaderValue<float> yPV(myReader, "yPV");
   TTreeReaderArray<float> dxyErr(myReader, "trk_dxyerr");
   TTreeReaderArray<float> dzErr(myReader, "trk_dzerr");
   TTreeReaderArray<float> ptErr(myReader, "trk_pterr");
-*/
+
 
   while (myReader.Next()) {
     Event *ev;
     if (isNew) {
-//      ev = new Event(*ntrk, *zPV, *xPV, *yPV, *eventN);
+      ev = new Event(*ntrk, *zPV, *xPV, *yPV, *eventN);
     }
     else {
       ev = new Event(*ntrk, *zPV, *eventN);
@@ -54,7 +54,7 @@ void EventCollector::initialize_events(bool isNew) {
     ev->particles[0].push_back(std::vector<Particle *>{});
     if (isNew) {
       for (int i = 0; i < *ntrk; ++i) {
-//        ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], ptErr[i], dxyErr[i], dzErr[i], 0, 0);
+        ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], ptErr[i], dxyErr[i], dzErr[i], 0, 0);
       }
     }
      else {
