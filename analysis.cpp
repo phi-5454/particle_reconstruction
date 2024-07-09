@@ -4,18 +4,18 @@
 #include <iostream>
 
 void initialize(EventCollector& evc, std::string part) {
-    std::cout << "Initializing events" << std::endl;
+    std::cout << "Initializing events." << std::endl;
 
     evc.initialize_events(false);
 
     if (part == "pion") evc.init_masses_and_energy(0.13957039);
     else evc.init_masses_and_energy(0.493667);
 
-    std::cout << "Finished initializing events" << std::endl;
+    std::cout << "Finished initializing events." << std::endl;
 }
 
 void filter(EventCollector& evc) {
-    std::cout << "Filtering events" << std::endl;
+    std::cout << "Filtering events." << std::endl;
 
     // Four-track events
     evc.filter_events([](Event *e) { return e->ntracks == 4; });
@@ -73,16 +73,17 @@ void filter(EventCollector& evc) {
         },
         "gaus", 3, 200, -3, 3, "Title");
 
-    std::cout << "Finished filtering events" << std::endl;
+    std::cout << "Finished filtering events." << std::endl;
 }
 
 void reconstruct(EventCollector& evc) {
-    std::cout << "Reconstructing particles" << std::endl;
+    std::cout << "Reconstructing particles." << std::endl;
     evc.reconstruct_particles();
-    std::cout << "Finished reconstructing" << std::endl;
+    std::cout << "Finished reconstructing." << std::endl;
 }
 
 void analyze_data(EventCollector& evc, std::string filename) {
+    std::cout << "Analyzing data." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
     TCanvas *c1 = new TCanvas("c1", "c1");
@@ -97,9 +98,12 @@ void analyze_data(EventCollector& evc, std::string filename) {
         200, -15, 15, "Primary vertex Z position", true);
 
     c1->SaveAs((filename + "_data.pdf").c_str());
+
+    std::cout << "Finished analyzing data." << std::endl;
 }
 
 void analyze_reco1(EventCollector& evc, std::string filename) {
+    std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
     TCanvas *c2 = new TCanvas("c2", "c2");
@@ -116,13 +120,16 @@ void analyze_reco1(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        140, 0.8, 1.5, "Mass of recreated particles, assumed pions",
+        160, 0.2, 1, "Mass of recreated particles, assumed pions",
         true);
     
     c2->SaveAs((filename + "_reco1.pdf").c_str());
+
+    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
 void analyze_reco2(EventCollector& evc, std::string filename) {
+    std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
     TCanvas *c3 = new TCanvas("c3", "c3");
@@ -137,10 +144,12 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        200, 1.5, 2.5, "Mass of recreated particle",
+        200, 1.5, 2.5, "Mass of the recreated particle",
         true);
     
     c3->SaveAs((filename + "_reco2.pdf").c_str());
+
+    std::cout << "Finished analyzing the second iteration of recreated particles." << std::endl;
 }
 
 int main()

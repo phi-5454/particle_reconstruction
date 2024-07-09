@@ -229,27 +229,6 @@ public:
     };
 
     /**
-     * @brief Analyzes the data
-     *
-     * @param filename Name of the file (pdf) where the histograms are drawn
-     */
-    void analyze(std::string filename);
-
-    /**
-     * @brief Analyzes the data through the new variables 
-     *
-     * @param filename Name of the file (pdf) where the histograms are drawn
-     */
-    void analyze_new(std::string filename);
-
-    /**
-     * @brief Analyzes the data of recreated particles
-     *
-     * @param filename Name of the file (pdf) where the histograms are drawn
-     */
-    void analyze_reco(std::string filename);
-
-    /**
      * @brief Initializes the masses of the particles to given value and energy
      * based on the mass
      *

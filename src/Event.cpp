@@ -110,7 +110,6 @@ void Event::reconstruct()
                 particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
                 n++;
             }
-            if (n != 2) std::cout << "Väärin meni" << std::endl;
         }
     }
 }
