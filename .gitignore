@@ -9,11 +9,11 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-src/.vscode/settings.json
+src/.vscode/*
 .cache/*
 build/*
 .idea/*
-src/.vscode/tasks.json
 res.root
 cmake-build-debug/*
 *.root
+libEventCollector.a
