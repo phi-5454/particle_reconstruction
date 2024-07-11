@@ -67,34 +67,6 @@ void EventCollector::initialize_events(bool isNew) {
   }
 }
 
-/// 2D Histograms
-
-template <typename F1, typename F2>
-TH2F *EventCollector::create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_x, double low_x, double high_x,
-                             int bins_y, double low_y, double high_y,
-                             const std::string& title, bool draw) {
-    TH2F *hist = new TH2F("hist", title.c_str(), bins_x, low_x, high_x, bins_y, low_y, high_y);
-    for (Event *&event : events) {
-        std::vector<double> values_x = lambda_x(event);
-        std::vector<double> values_y = lambda_y(event);
-        for (int i = 0; i < values_x.size(); ++i) {
-            hist->Fill(values_x[i], values_y[i]);
-        }
-    }
-    if (draw)
-        hist->Draw("Colz");
-    return hist;
-}
-
-template <typename F1, typename F2>
-TH2F *EventCollector::create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, const std::string& title,  bool draw) {
-    auto [min_x, max_x] = find_min_max(lambda_x);
-    auto [min_y, max_y] = find_min_max(lambda_y);
-    return create_2Dhistogram(lambda_x, lambda_y, round(pow(2 * events.size(), 0.5)), min_x, max_x,
-                              round(pow(2 * events.size(), 0.5)), min_y, max_y,
-                              title, draw);
-}
-
 void EventCollector::init_masses_and_energy(double mass) {
   for (Event *&event : events)
     for (int i = 0; i < event->ntracks; ++i) {

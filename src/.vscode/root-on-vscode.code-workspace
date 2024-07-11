@@ -89,6 +89,8 @@
       "${default}",
       "/cvmfs/sft.cern.ch/lcg/releases/ROOT/v6.24.00-fc1d8/x86_64-mac11-clang120-opt/include",
       "/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction/src",
+      "/home/jvierros/Downloads/root/include",
+      "/home/jvierros/lxplus_mount/private/particle_reconstruction/src"
     ]
   }
 }
