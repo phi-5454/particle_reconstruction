@@ -231,6 +231,26 @@ public:
         });
     };
 
+    template <typename F>
+    void filter_events_distribution(F &&lambda, TF1* func, double sigmaMulti,
+                                    int bins, double low, double high,
+                                    std::string title) {
+        TH1 *hist = create_1Dhistogram(lambda, bins, low, high, title, false);
+        hist->Fit(func);
+        TF1 *fit = hist->GetFunction("fit");
+        double mean = fit->GetParameter("Mean");
+        double sigma = fit->GetParameter("Sigma");
+        filter_events([&](Event *event) {
+            std::vector<double> values = lambda(event);
+            for (double value : values) {
+            if (value < mean - sigmaMulti * sigma ||
+                value > mean + sigmaMulti * sigma)
+                return false;
+            }
+            return true;
+        });
+    };
+
     /**
      * @brief Filters the events based on the distribution
      *
