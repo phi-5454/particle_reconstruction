@@ -36,7 +36,7 @@ void filter(EventCollector& evc) {
         }
         return j == 0;
     });
-
+/*
     // Primary vertex XY position
     evc.filter_events_distribution(
         [](Event *event) {
@@ -85,7 +85,7 @@ void filter(EventCollector& evc) {
         }
         return (abs(px) > 0.1 && abs(py) > 0.1);
     });
-
+*/
     std::cout << "Finished filtering events." << std::endl;
 }
 
@@ -99,13 +99,16 @@ void analyze_data(EventCollector& evc, std::string filename) {
     std::cout << "Analyzing data." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
+    TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+
     TCanvas *c11 = new TCanvas("c11", "c11");
     c11->DivideSquare(4);
     c11->Draw();
 
     c11->cd(1);
     // Primary vertex Z position
-    TH1 *h11 = evc.create_1Dhistogram(
+    evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values = {event->zPV};
             return values;
@@ -114,7 +117,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
 
     c11->cd(2);
     // Primary vertex XY position
-    evc.create_1Dhistogram(
+    TH1* h12 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
             return values;
@@ -123,7 +126,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
 
     c11->cd(3);
     // Particle smallest distance from the primary vertex in xy-plane
-    evc.create_1Dhistogram(
+    TH1* h13 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
             for (int i = 0; i < 4; ++i)
