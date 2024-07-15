@@ -22,21 +22,14 @@ Double_t CauchyDist(Double_t *x, Double_t *par) {
 void filter(EventCollector& evc) {
     std::cout << "Filtering events." << std::endl;
 
+    // Breit-Wigner or Cauchy distribution for filtering
     TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
-    // Four-track events
-    evc.filter_events([](Event *e) { return e->ntracks == 4; });
+    // Non-two-track events
+    evc.filter_events([](Event *event) { return event->ntracks > 2; });
+    //evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
-    // Net zero charge events
-    evc.filter_events([](Event *e) {
-        int j = 0;
-        for (int i = 0; i < 4; ++i) {
-        j += e->get_particle(0, 0, i)->q;
-        }
-        return j == 0;
-    });
-/*
     // Primary vertex XY position
     evc.filter_events_distribution(
         [](Event *event) {
@@ -54,26 +47,38 @@ void filter(EventCollector& evc) {
         "gaus", 3);
 
     // Particle smallest distance from the primary vertex in xy-plane
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dxy) < 0.1;
+        }
+    );
+/*    
     f1->SetParameters(0, 0.1, 50);
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < event->ntracks; ++i)
             values[i] = event->get_particle(0, 0, i)->dxy;
             return values;
         },
         f1, 3, 100, -0.5, 0.5, "Title");
-
+*/
     // Particle smallest distance from the primary vertex in z-axis
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dz) < 0.1;
+        }
+    );
+/*    
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < event->ntracks; ++i)
             values[i] = event->get_particle(0, 0, i)->dz;
             return values;
         },
         "gaus", 3);
-
+*/
     // No elastic protons
     evc.filter_events([](Event * event) {
         double px = 0;
@@ -85,7 +90,19 @@ void filter(EventCollector& evc) {
         }
         return (abs(px) > 0.1 && abs(py) > 0.1);
     });
-*/
+
+    // Four track events
+    evc.filter_events([](Event *event) { return event->ntracks == 4; });
+
+    // Net zero charge events
+    evc.filter_events([](Event *event) {
+        int j = 0;
+        for (int i = 0; i < event->ntracks; ++i) {
+        j += event->get_particle(0, 0, i)->q;
+        }
+        return j == 0;
+    });
+
     std::cout << "Finished filtering events." << std::endl;
 }
 
@@ -280,10 +297,10 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    f1->SetParameters(0.1, 0.78, 50);
+    f1->SetParameters(0.1, 1.02, 30);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
-    //h21->Fit("CauchyFit", "", "", 0.755, 0.785);
+    //h21->Fit("CauchyFit", "", "", 1.01, 1.03);
     
     c21->SaveAs((filename + "_reco1.pdf").c_str());
 
@@ -294,7 +311,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             for (int i = 0; i < 2; ++i) {
                 for (int j = 0; j < 2; ++j) {
                     double mass = event->get_particle(1, i, j)->mass;
-                    if (mass < 0.768115 - 2 * 0.149124 || mass > 0.768115 + 2 * 0.149124)
+                    if (mass < 1.02104 - 0.0431 || mass > 1.02104 + 0.0431)
                         return false;
                     }
                 }
@@ -311,7 +328,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
     evc.filter_events(
         [](Event *event) {
             for (int i = 0; i < 2; ++i) {
-                if (event->get_particle(2, i, 0)->eta > 1)
+                if (event->get_particle(2, i, 0)->eta > 0.65)
                     return false;
             }
             return true;
@@ -340,7 +357,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
@@ -348,11 +365,11 @@ int main()
 
     initialize(evc, part_type);
     filter(evc);
-    analyze_data(evc, "histogram1");
-/*    reconstruct(evc);
-    analyze_reco1(evc, "histogram2", part_type);
+//    analyze_data(evc, "histogram1");
+    reconstruct(evc);
+//    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram3");
-*/
+
     return 0;
 }

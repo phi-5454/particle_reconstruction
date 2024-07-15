@@ -188,6 +188,17 @@ public:
     }
 
     /**
+     * @brief Filters tracks in an event based on the given lambda function
+     * 
+     * @tparam F A lambda function
+     * @param lambda The filter function
+     */
+    template <typename F>void filter_tracks(F &&lambda) {
+        for (Event* &event: events)
+            event->filter_tracks(lambda);
+    }
+
+    /**
      * @brief Filters the events based on the given lambda function
      *
      * @tparam F A lambda function

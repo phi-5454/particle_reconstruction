@@ -1,6 +1,7 @@
 #ifndef EVENT_H
 #define EVENT_H
 
+#include <algorithm>
 #include <vector>
 #include "Particle.h"
 #include "Proton.h"
@@ -110,6 +111,20 @@ public:
      * @param mass Mass to be given
      */
     void set_masses_and_energies(double mass);
+
+    /**
+     * @brief Filters the particles in an event based on the lambda
+     * 
+     * @tparam F A lambda function
+     * @param lambda Function used to filter
+     */
+    template <typename F> void filter_tracks(F &&lambda) {
+        auto helper = std::vector<Particle *>(particles[0][0].size());
+        auto it = std::copy_if(particles[0][0].begin(), particles[0][0].end(), helper.begin(), lambda);
+        helper.resize(it - helper.begin());
+        particles[0][0] = helper;
+        ntracks = helper.size();
+    }
 
     /**
      * @brief Reconstructs a new particle from two given particles
