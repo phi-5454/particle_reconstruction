@@ -4,6 +4,12 @@
 #include <math.h>
 #include "EventCollector.h"
 
+/**
+ * @brief Create object for each event and fill it with particles. Also give all particles a certain mass.
+ * 
+ * @param evc EventCollector
+ * @param part Particle type (pion or kaon)
+ */
 void initialize(EventCollector& evc, std::string part) {
     std::cout << "Initializing events." << std::endl;
 
@@ -15,14 +21,26 @@ void initialize(EventCollector& evc, std::string part) {
     std::cout << "Finished initializing events." << std::endl;
 }
 
+/**
+ * @brief Cauchy or Breit-Wigner distribution function
+ * 
+ * @param x X
+ * @param par Parameters: Width, location and scale 
+ * @return Double_t Value of the function with given parameters
+ */
 Double_t CauchyDist(Double_t *x, Double_t *par) {
     return par[2] * par[0] / (2 * (pow(par[0], 2) / 4 + pow(x[0] - par[1], 2)));
 }
 
+/**
+ * @brief Filters the events based on given criteria
+ * 
+ * @param evc EventCollector
+ */
 void filter(EventCollector& evc) {
     std::cout << "Filtering events." << std::endl;
 
-    // Breit-Wigner or Cauchy distribution for filtering
+    // Cauchy distribution for filtering
     TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
@@ -49,10 +67,12 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.1;
+            return abs(part->dxy) < 0.3;
         }
     );
-/*    
+/*
+    // Same as above, just with event-based filtering instead of particle-based
+
     f1->SetParameters(0, 0.1, 50);
     evc.filter_events_distribution(
         [](Event *event) {
@@ -66,10 +86,12 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.1;
+            return abs(part->dz) < 0.3;
         }
     );
 /*    
+    // Same as above, just with event-based filtering instead of particle-based
+
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
@@ -88,7 +110,7 @@ void filter(EventCollector& evc) {
             px += prot->px;
             py += prot->py;
         }
-        return (abs(px) > 0.1 && abs(py) > 0.1);
+        return (abs(px) > 0.05 && abs(py) > 0.05);
     });
 
     // Four track events
@@ -106,12 +128,23 @@ void filter(EventCollector& evc) {
     std::cout << "Finished filtering events." << std::endl;
 }
 
+/**
+ * @brief Reconstructs the particles from pairs
+ * 
+ * @param evc EventCollector
+ */
 void reconstruct(EventCollector& evc) {
     std::cout << "Reconstructing particles." << std::endl;
     evc.reconstruct_particles();
     std::cout << "Finished reconstructing." << std::endl;
 }
 
+/**
+ * @brief Analyzes the initial data that hasn't been reconstructed
+ * 
+ * @param evc EventCollector
+ * @param filename Name of the created histogram pdf file
+ */
 void analyze_data(EventCollector& evc, std::string filename) {
     std::cout << "Analyzing data." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
@@ -267,14 +300,19 @@ void analyze_data(EventCollector& evc, std::string filename) {
     std::cout << "Finished analyzing data." << std::endl;
 }
 
+/**
+ * @brief Analyzes the first reconstruction data
+ * 
+ * @param evc EventCollector
+ * @param filename Name of the created histogram pdf file
+ * @param type Type of initial particle
+ */
 void analyze_reco1(EventCollector& evc, std::string filename, std::string type) {
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
     TCanvas *c21 = new TCanvas("c21", "c21");
     c21->Draw();
-
-    c21->cd(1);
 
     float min = 0.8;
     float max = 1.6;
@@ -283,17 +321,19 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
         max = 1;
     }
 
-    TH1 *h21 = evc.create_1Dhistogram(
+    c21->cd(1);
+    TH1 *h21 = evc.create_2Dhistogram(
         [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 2; ++i) {
-                for (int j = 0; j < 2; ++j) {
-                    values[2 * i + j] = event->get_particle(1, i, j)->mass;
-                }
-            }
+            std::vector<double> values(2);
+            for (int i = 0; i < 2; ++i)
+                values[i] = event->get_particle(1, i, 0)->mass;
             return values;
-        },
-        120, min, max, "Mass of recreated particles, assumed " + type + "s",
+        }, [](Event *event) {
+            std::vector<double> values(2);
+            for (int i = 0; i < 2; ++i)
+                values[i] = event->get_particle(1, i, 1)->mass;
+            return values;
+        }, 50, min, max, 50, min, max, "Mass of recreated particles, assumed " + type + "s",
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
@@ -321,6 +361,12 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 */
 }
 
+/**
+ * @brief Analyzes the second reconstructed data
+ * 
+ * @param evc EventCollector
+ * @param filename Name of the created histogram pdf file
+ */
 void analyze_reco2(EventCollector& evc, std::string filename) {
     std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
@@ -357,7 +403,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
@@ -367,9 +413,9 @@ int main()
     filter(evc);
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);
-//    analyze_reco1(evc, "histogram2", part_type);
-    reconstruct(evc);
+    analyze_reco1(evc, "histogram2", part_type);
+/*    reconstruct(evc);
     analyze_reco2(evc, "histogram3");
-
+*/
     return 0;
 }
