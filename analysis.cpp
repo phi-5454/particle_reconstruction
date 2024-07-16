@@ -43,7 +43,7 @@ void filter(EventCollector& evc) {
     // Cauchy distribution for filtering
     TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
     f1->SetParNames("Sigma", "Mean", "Scale");
-
+/*
     // Non-two-track events
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
@@ -70,7 +70,7 @@ void filter(EventCollector& evc) {
             return abs(part->dxy) < 0.3;
         }
     );
-/*
+
     // Same as above, just with event-based filtering instead of particle-based
 
     f1->SetParameters(0, 0.1, 50);
@@ -82,14 +82,14 @@ void filter(EventCollector& evc) {
             return values;
         },
         f1, 3, 100, -0.5, 0.5, "Title");
-*/
+
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
             return abs(part->dz) < 0.3;
         }
     );
-/*    
+
     // Same as above, just with event-based filtering instead of particle-based
 
     evc.filter_events_distribution(
@@ -100,7 +100,7 @@ void filter(EventCollector& evc) {
             return values;
         },
         "gaus", 3);
-*/
+
     // No elastic protons
     evc.filter_events([](Event * event) {
         double px = 0;
@@ -112,7 +112,7 @@ void filter(EventCollector& evc) {
         }
         return (abs(px) > 0.05 && abs(py) > 0.05);
     });
-
+*/
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
@@ -166,6 +166,15 @@ void analyze_data(EventCollector& evc, std::string filename) {
         60, -15, 15, "Primary vertex Z position", true);
 
     c11->cd(2);
+
+    // Proton X momentum sum vs. Y momentum sum
+    TH2* h12 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
+        }, 100, -2, 2, 75, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true);
+/*
     // Primary vertex XY position
     TH1* h12 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -173,7 +182,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         },
         70, 0.12, 0.19, "Primary vertex radial position", true);
-
+*/
     c11->cd(3);
     // Particle smallest distance from the primary vertex in xy-plane
     TH1* h13 = evc.create_1Dhistogram(
@@ -203,7 +212,16 @@ void analyze_data(EventCollector& evc, std::string filename) {
     c12->Draw();
 
     c12->cd(1);
+    // Particle azimuthal angle
+    TH1* h22 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(4);
+            for (int i = 0; i < 4; ++i)
+                values[i] = event->get_particle(0, 0, i)->phi;
+            return values;
+        }, 100, -3.2, 3.2, "Particle azimuthal angle", true);
     // Particle dxy vs. azimuthal angle
+/*
     TH2* h22 = evc.create_2Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
@@ -217,7 +235,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true);
     h22->SetMinimum(5);
-
+*/
     c12->cd(2);
     // Particle dz versus pseudorapidity
     TH2* h21 = evc.create_2Dhistogram(
@@ -231,7 +249,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->eta;
             return values;
-        }, 100, -0.2, 0.2, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true);
+        }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true);
     h21->SetMinimum(5);
 
     c12->cd(3);
@@ -405,16 +423,16 @@ int main()
 {
     const std::string part_type = "pion";
     EventCollector evc(
-//             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM2*.root?#tree"
+//             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize(evc, part_type);
     filter(evc);
-//    analyze_data(evc, "histogram1");
-    reconstruct(evc);
-    analyze_reco1(evc, "histogram2", part_type);
+    analyze_data(evc, "histogram1");
 /*    reconstruct(evc);
+    analyze_reco1(evc, "histogram2", part_type);
+    reconstruct(evc);
     analyze_reco2(evc, "histogram3");
 */
     return 0;
