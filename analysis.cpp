@@ -48,6 +48,18 @@ void filter(EventCollector& evc) {
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
+    // No loopers
+    evc.filter_events(
+        [](Event *event) {
+        for (int i = 0; i < event->ntracks - 1; ++i) {
+            Particle* part1 = event->get_particle(0, 0, i);
+            for (int j = i + 1; j < event->ntracks; ++j) {
+                Particle* part2 = event->get_particle(0, 0, j);
+                return sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)) > 0.05;
+            }
+        }
+    );
+
     // Primary vertex XY position
     evc.filter_events_distribution(
         [](Event *event) {
@@ -163,25 +175,26 @@ void analyze_data(EventCollector& evc, std::string filename) {
             std::vector<double> values = {event->zPV};
             return values;
         },
-        60, -15, 15, "Primary vertex Z position", true);
+        60, -15, 15, "Primary vertex Z position", true, "Distance (mm)", "Events/0,5 mm");
 
     c11->cd(2);
 
-    // Proton X momentum sum vs. Y momentum sum
-    TH2* h12 = evc.create_2Dhistogram(
-        [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
-        }, 100, -2, 2, 75, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true);
-/*
     // Primary vertex XY position
     TH1* h12 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
             return values;
         },
-        70, 0.12, 0.19, "Primary vertex radial position", true);
+        70, 0.12, 0.19, "Primary vertex radial position", true, "Distance (mm)", "Events/1 μm");
+/*
+    // Proton X momentum sum vs. Y momentum sum
+    TH2* h12 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
+        }, 100, -2, 2, 75, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
+        "Px of protons (GeV)", "Py of protons (GeV)");
 */
     c11->cd(3);
     // Particle smallest distance from the primary vertex in xy-plane
@@ -192,10 +205,10 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dxy;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true);
+        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 μm");
 
     c11->cd(4);
-    // Particle smallest distance from the primary vertex in xz-axis
+    // Particle smallest distance from the primary vertex in z-axis
     evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
@@ -203,7 +216,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dz;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true);
+        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 μm");
 
     c11->SaveAs((filename + "_dataA.pdf").c_str());
 
@@ -212,17 +225,8 @@ void analyze_data(EventCollector& evc, std::string filename) {
     c12->Draw();
 
     c12->cd(1);
-    // Particle azimuthal angle
-    TH1* h22 = evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->phi;
-            return values;
-        }, 100, -3.2, 3.2, "Particle azimuthal angle", true);
     // Particle dxy vs. azimuthal angle
-/*
-    TH2* h22 = evc.create_2Dhistogram(
+        TH2* h22 = evc.create_2Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
             for (int i = 0; i < 4; ++i)
@@ -233,9 +237,9 @@ void analyze_data(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true);
+        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true, "dxy (mm)", "Azimuthal angle (rad)");
     h22->SetMinimum(5);
-*/
+    
     c12->cd(2);
     // Particle dz versus pseudorapidity
     TH2* h21 = evc.create_2Dhistogram(
@@ -249,10 +253,20 @@ void analyze_data(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->eta;
             return values;
-        }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true);
+        }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
 
     c12->cd(3);
+    // Particle azimuthal angle
+    TH1* h23 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(4);
+            for (int i = 0; i < 4; ++i)
+                values[i] = event->get_particle(0, 0, i)->phi;
+            return values;
+        }, 100, -3.2, 3.2, "Particle azimuthal angle", true, "Azimuthal angle (rad)", "Events/64 mrad");
+    
+    c12->cd(4);
     // Particle transverse momentum
     evc.create_1Dhistogram(
         [](Event *event) {
@@ -261,18 +275,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->pt;
             return values;
         },
-        100, 0, 2, "Particle transverse momentum", true);
-
-    c12->cd(4);
-    // Particle pseudorapidity
-    evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->eta;
-            return values;
-        },
-        100, -3.5, 3.5, "Particle pseudorapidity", true);
+        100, 0, 2, "Particle transverse momentum", true, "Transverse momentum (GeV)", "Events/20 MeV");
 
     c12->SaveAs((filename + "_dataB.pdf").c_str());
 
@@ -289,7 +292,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dxy / event->get_particle(0, 0, i)->dxyErr;
             return values;
         },
-        100, -5, 5, "Particle dxy / dxyErr", true);
+        100, -5, 5, "Particle dxy / dxyErr", true, "dxy/dxy error", "Events/0,1");
 
     c13->cd(2);
     // Particle dz / dz error
@@ -300,7 +303,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dz / event->get_particle(0, 0, i)->dzErr;
             return values;
         },
-        200, -5, 5, "Particle dz / dzErr", true);
+        200, -5, 5, "Particle dz / dzErr", true, "dz/dz error", "Events/0,05");
     
     c13->cd(3);
     // Particle pt error / pt
@@ -311,7 +314,22 @@ void analyze_data(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->ptErr / event->get_particle(0, 0, i)->pt;
             return values;
         },
-        100, 0, 0.1, "Particle ptErr / pt", true);
+        100, 0, 0.1, "Particle ptErr / pt", true, "pt error / pt", "Events/0,1%");
+
+    c13->cd(4);
+    // Check for loopers in an event
+    evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values;
+            for (int i = 0; i < event->ntracks - 1; ++i) {
+                Particle* part1 = event->get_particle(0, 0, i);
+                for (int j = i + 1; j < event->ntracks; ++j) {
+                    Particle* part2 = event->get_particle(0, 0, j);
+                    values.push_back(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)));
+                }
+            }
+            return values;
+        }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, "Sum of total momentum (GeV)", "Events/5 MeV");
 
     c13->SaveAs((filename + "_dataC.pdf").c_str());
 

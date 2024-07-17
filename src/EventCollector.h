@@ -58,6 +58,37 @@ public:
     };
 
     /**
+     * @brief Create a 1Dhistogram
+     * 
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda for event. Needs to return
+     * a vector of doubles.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param draw Whether or not to draw the histogram
+     * @param xtitle Title of the x-axis
+     * @param ytitle Title of the y-axis
+     * @return TH1F* Drawn histogram
+     */
+    template <typename F>
+    TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high, std::string title, bool draw,
+                             std::string xtitle, std::string ytitle) {
+        TH1F *hist = new TH1F("hist", title.c_str(), bins, low, high);
+        for (Event *&event : events) {
+            std::vector<double> values = lambda(event);
+            for (double value : values)
+                hist->Fill(value);
+        }
+        hist->GetXaxis()->SetTitle(xtitle.c_str());
+        hist->GetYaxis()->SetTitle(ytitle.c_str());
+        if (draw)
+            hist->Draw("E");
+        return hist;
+    }
+
+    /**
      * @brief Create a 1D histogram
      *
      * @tparam F A lambda function
@@ -73,15 +104,7 @@ public:
     template <typename F>
     TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high,
                              std::string title, bool draw) {
-          TH1F *hist = new TH1F("hist", title.c_str(), bins, low, high);
-        for (Event *&event : events) {
-            std::vector<double> values = lambda(event);
-            for (double value : values)
-                hist->Fill(value);
-        }
-        if (draw)
-            hist->Draw("E");
-        return hist;
+        return create_1Dhistogram(lambda, bins, low, high, title, draw, "GeV", "Events");
     };
 
     /**
@@ -134,6 +157,25 @@ public:
                                       max, "A histogram for a fit", distr);
     };
 
+    template <typename F1, typename F2>
+    TH2F *create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_x, double low_x, double high_x,
+                             int bins_y, double low_y, double high_y, const std::string title,
+                             bool draw, std::string xtitle, std::string ytitle) {
+        TH2F *hist = new TH2F("hist", title.c_str(), bins_x, low_x, high_x, bins_y, low_y, high_y);
+        for (Event *&event : events) {
+            std::vector<double> values_x = lambda_x(event);
+            std::vector<double> values_y = lambda_y(event);
+            for (int i = 0; i < values_x.size(); ++i) {
+                hist->Fill(values_x[i], values_y[i]);
+            }
+        }
+        hist->GetXaxis()->SetTitle(xtitle.c_str());
+        hist->GetYaxis()->SetTitle(ytitle.c_str());
+        if (draw)
+            hist->Draw("Colz");
+        return hist;
+    }
+
 
     /**
      * @brief Create a 2D histogram. MAKE SURE TO PLOT COMPATIBLE VARIABLES
@@ -153,17 +195,8 @@ public:
     TH2F *create_2Dhistogram(F1 &&lambda_x, F2 &&lambda_y, int bins_x, double low_x, double high_x,
                              int bins_y, double low_y, double high_y,
                              const std::string& title, bool draw) {
-        TH2F *hist = new TH2F("hist", title.c_str(), bins_x, low_x, high_x, bins_y, low_y, high_y);
-        for (Event *&event : events) {
-            std::vector<double> values_x = lambda_x(event);
-            std::vector<double> values_y = lambda_y(event);
-            for (int i = 0; i < values_x.size(); ++i) {
-                hist->Fill(values_x[i], values_y[i]);
-            }
-        }
-        if (draw)
-            hist->Draw("Colz");
-        return hist;
+        return create_2Dhistogram(lambda_x, lambda_y, bins_x, low_x, high_x, bins_y, low_y, high_y, title, draw,
+                                  "X-axis", "Y-axis");
     }
 
 
