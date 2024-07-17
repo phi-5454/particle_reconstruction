@@ -396,7 +396,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 0.77 - 0.125 || mass > 0.77 + 0.125)
+                if (mass < 1.02 - 0.05 || mass > 1.02 + 0.05)
                     return false;
             }
             return true;
@@ -461,7 +461,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
