@@ -314,6 +314,18 @@ public:
     };
 
     /**
+     * @brief Filters the reconstructed particle pairs
+     * 
+     * @tparam F A lambda function
+     * @param lambda Function used to filter
+     */
+    template <typename F>
+    void filter_reconstruction(F &&lambda) {
+        for (Event* &event : events)
+            event->filter_reco(lambda);
+    }
+
+    /**
      * @brief Initializes the masses of the particles to given value and energy
      * based on the mass
      *

@@ -43,7 +43,7 @@ void filter(EventCollector& evc) {
     // Cauchy distribution for filtering
     TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
     f1->SetParNames("Sigma", "Mean", "Scale");
-/*
+
     // Non-two-track events
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
@@ -51,12 +51,15 @@ void filter(EventCollector& evc) {
     // No loopers
     evc.filter_events(
         [](Event *event) {
-        for (int i = 0; i < event->ntracks - 1; ++i) {
-            Particle* part1 = event->get_particle(0, 0, i);
-            for (int j = i + 1; j < event->ntracks; ++j) {
-                Particle* part2 = event->get_particle(0, 0, j);
-                return sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)) > 0.05;
+            for (int i = 0; i < event->ntracks - 1; ++i) {
+                Particle* part1 = event->get_particle(0, 0, i);
+                for (int j = i + 1; j < event->ntracks; ++j) {
+                    Particle* part2 = event->get_particle(0, 0, j);
+                    if(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)) < 0.05)
+                        return false;
+                }
             }
+            return true;
         }
     );
 
@@ -84,7 +87,7 @@ void filter(EventCollector& evc) {
     );
 
     // Same as above, just with event-based filtering instead of particle-based
-
+/*
     f1->SetParameters(0, 0.1, 50);
     evc.filter_events_distribution(
         [](Event *event) {
@@ -94,7 +97,7 @@ void filter(EventCollector& evc) {
             return values;
         },
         f1, 3, 100, -0.5, 0.5, "Title");
-
+*/
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
@@ -103,7 +106,7 @@ void filter(EventCollector& evc) {
     );
 
     // Same as above, just with event-based filtering instead of particle-based
-
+/*
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values(4);
@@ -112,7 +115,7 @@ void filter(EventCollector& evc) {
             return values;
         },
         "gaus", 3);
-
+*/
     // No elastic protons
     evc.filter_events([](Event * event) {
         double px = 0;
@@ -124,7 +127,7 @@ void filter(EventCollector& evc) {
         }
         return (abs(px) > 0.05 && abs(py) > 0.05);
     });
-*/
+
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
@@ -267,15 +270,19 @@ void analyze_data(EventCollector& evc, std::string filename) {
         }, 100, -3.2, 3.2, "Particle azimuthal angle", true, "Azimuthal angle (rad)", "Events/64 mrad");
     
     c12->cd(4);
-    // Particle transverse momentum
+    // Event transverse momentum
     evc.create_1Dhistogram(
         [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->pt;
-            return values;
+            double px = 0;
+            double py = 0;
+            for (int i = 0; i < 4; ++i) {
+                Particle* part = event->get_particle(0, 0, i);
+                px += part->px;
+                py += part->py;
+            }
+            return std::vector<double>{sqrt(pow(px, 2) + pow(py, 2))};
         },
-        100, 0, 2, "Particle transverse momentum", true, "Transverse momentum (GeV)", "Events/20 MeV");
+        100, 0, 2, "Event transverse momentum", true, "Transverse momentum (GeV)", "Events/20 MeV");
 
     c12->SaveAs((filename + "_dataB.pdf").c_str());
 
@@ -354,22 +361,21 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     float max = 1.6;
     if (type == "pion" ) {
         min = 0.2;
-        max = 1;
+        max = 2.6;
     }
 
-    c21->cd(1);
     TH1 *h21 = evc.create_2Dhistogram(
         [](Event *event) {
             std::vector<double> values(2);
-            for (int i = 0; i < 2; ++i)
+            for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 0)->mass;
             return values;
         }, [](Event *event) {
             std::vector<double> values(2);
-            for (int i = 0; i < 2; ++i)
+            for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
-        }, 50, min, max, 50, min, max, "Mass of recreated particles, assumed " + type + "s",
+        }, 150, min, max, 150, min, max, "Mass of recreated particles, assumed " + type + "s",
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
@@ -378,9 +384,25 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 
     //h21->Fit("CauchyFit", "", "", 1.01, 1.03);
     
-    c21->SaveAs((filename + "_reco1.pdf").c_str());
+    c21->SaveAs((filename + "_reco1A.pdf").c_str());
+
+    TCanvas* c22 = new TCanvas("c2", "c2");
+    c22->Draw();
 
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
+
+    evc.filter_reconstruction(
+        [](std::vector<Particle*> parts) {
+            if (parts.size() == 0) return false;
+            for (int i = 0; i < parts.size(); ++i) {
+                double mass = parts[i]->mass;
+                if (mass < 0.77 - 0.125 || mass > 0.77 + 0.125)
+                    return false;
+            }
+            return true;
+        }
+    );
+    
 /*
     evc.filter_events(
         [](Event *event) {
@@ -424,7 +446,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
     TH1 *h31 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < event->particles[2].size(); ++i) {
                 values[i] = event->get_particle(2, i, 0)->mass;
             }
             return values;
@@ -447,11 +469,12 @@ int main()
 
     initialize(evc, part_type);
     filter(evc);
-    analyze_data(evc, "histogram1");
-/*    reconstruct(evc);
-    analyze_reco1(evc, "histogram2", part_type);
+//    analyze_data(evc, "histogram1");
     reconstruct(evc);
-    analyze_reco2(evc, "histogram3");
-*/
+    analyze_reco1(evc, "histogram1", part_type);
+//    analyze_reco1(evc, "histogram2", part_type);
+    reconstruct(evc);
+    analyze_reco2(evc, "histogram1");
+
     return 0;
 }

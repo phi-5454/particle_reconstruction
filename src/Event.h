@@ -127,6 +127,19 @@ public:
     }
 
     /**
+     * @brief Filters the reconstructed particle pairs based on the lambda
+     * 
+     * @tparam F A lambda function
+     * @param lambda Function used to filter
+     */
+    template <typename F> void filter_reco(F &&lambda) {
+        auto helper = std::vector<std::vector<Particle *>>(particles[1].size());
+        auto it = std::copy_if(particles[1].begin(), particles[1].end(), helper.begin(), lambda);
+        helper.resize(it - helper.begin());
+        particles[1] = helper;
+    }
+
+    /**
      * @brief Reconstructs a new particle from two given particles
      * 
      * @param p1 First particle
