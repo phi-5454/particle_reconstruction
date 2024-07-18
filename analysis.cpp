@@ -267,7 +267,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 100, -3.2, 3.2, "Particle azimuthal angle", true, "Azimuthal angle (rad)", "Events/64 mrad");
+        }, 64, -3.2, 3.2, "Particle azimuthal angle", true, "Azimuthal angle (rad)", "Events/100 mrad");
     
     c12->cd(4);
     // Event transverse momentum
@@ -357,14 +357,14 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     TCanvas *c21 = new TCanvas("c21", "c21");
     c21->Draw();
 
-    float min = 0.8;
-    float max = 1.6;
+    float min = 0.2;
+    float max = 2.6;
     if (type == "pion" ) {
         min = 0.2;
         max = 2.6;
     }
 
-    TH1 *h21 = evc.create_2Dhistogram(
+    TH2 *h21 = evc.create_2Dhistogram(
         [](Event *event) {
             std::vector<double> values(2);
             for (int i = 0; i < event->particles[1].size(); ++i)
@@ -390,33 +390,24 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     c22->Draw();
 
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
+    
+    TH1 *h22 = h21->ProjectionX();
+    h22->Add(h21->ProjectionY());
+    h22->Draw();
 
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 1.02 - 0.05 || mass > 1.02 + 0.05)
+                if (mass < 1.02 - 0.06 || mass > 1.02 + 0.06)
                     return false;
             }
             return true;
         }
     );
-    
-/*
-    evc.filter_events(
-        [](Event *event) {
-            for (int i = 0; i < 2; ++i) {
-                for (int j = 0; j < 2; ++j) {
-                    double mass = event->get_particle(1, i, j)->mass;
-                    if (mass < 1.02104 - 0.0431 || mass > 1.02104 + 0.0431)
-                        return false;
-                    }
-                }
-            return true;
-        }
-    );
-*/
+
+    c22->SaveAs((filename + "_reco1B.pdf").c_str());
 }
 
 /**
@@ -451,7 +442,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        40, 1.5, 2.5, "Mass of the recreated particle",
+        100, 2, 2.5, "Mass of the recreated particle",
         true);
     
     c31->SaveAs((filename + "_reco2.pdf").c_str());
