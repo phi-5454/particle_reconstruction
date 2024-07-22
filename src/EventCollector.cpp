@@ -45,7 +45,6 @@ void EventCollector::initialize_events(bool isNew) {
     Event *ev;
     if (isNew) {
       ev = new Event(*ntrk, *zPV, *xPV, *yPV, *eventN);
-//      if (*eventN == 91687508) std::cout << "Hep" << std::endl;
     }
     else {
       ev = new Event(*ntrk, *zPV, *eventN);

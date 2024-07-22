@@ -293,6 +293,7 @@ public:
             }
             return true;
         });
+        delete hist;
     };
 
     /**

@@ -267,8 +267,8 @@ void analyze_data(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 64, -3.2, 3.2, "Particle azimuthal angle", true, "Azimuthal angle (rad)", "Events/100 mrad");
-    
+        }, 330, -3.3, 3.3, "Particle track azimuthal angle", true, "Azimuthal angle (rad)", "Events/20 mrad");
+
     c12->cd(4);
     // Event transverse momentum
     evc.create_1Dhistogram(
@@ -375,8 +375,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
-        }, 150, min, max, 150, min, max, "Mass of recreated particles, assumed " + type + "s",
-        true);
+        }, 240, min, max, 240, min, max, "Mass of recreated particles, assumed " + type + "s",
+        true, "m_p1 (GeV)", "m_p2 (GeV)");
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.1, 1.02, 30);
@@ -393,14 +393,16 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     
     TH1 *h22 = h21->ProjectionX();
     h22->Add(h21->ProjectionY());
-    h22->Draw();
+    h22->GetXaxis()->SetTitle("Mass (GeV)");
+    h22->GetYaxis()->SetTitle("Events/10 MeV");
+    h22->Draw("E");
 
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 1.02 - 0.06 || mass > 1.02 + 0.06)
+                if (mass < 1.02 - 0.05 || mass > 1.02 + 0.05)
                     return false;
             }
             return true;
@@ -456,12 +458,12 @@ int main()
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/single/*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/indiv_partial2/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize(evc, part_type);
     filter(evc);
-//    analyze_data(evc, "histogram1");
+    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
 //    analyze_reco1(evc, "histogram2", part_type);
