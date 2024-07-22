@@ -10,7 +10,7 @@
  * @param evc EventCollector
  * @param part Particle type (pion or kaon)
  */
-void initialize(EventCollector& evc, std::string part) {
+void initialize_particles(EventCollector& evc, std::string part) {
     std::cout << "Initializing events." << std::endl;
 
     evc.initialize_events(true);
@@ -19,6 +19,10 @@ void initialize(EventCollector& evc, std::string part) {
     else evc.init_masses_and_energy(0.493667);
 
     std::cout << "Finished initializing events." << std::endl;
+}
+
+void initialize_protons(EventCollector& evc) {
+    evc.initialize_protons();
 }
 
 /**
@@ -402,7 +406,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 1.02 - 0.05 || mass > 1.02 + 0.05)
+                if (mass < 0.77 - 0.15 || mass > 0.77 + 0.15)
                     return false;
             }
             return true;
@@ -444,7 +448,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        100, 2, 2.5, "Mass of the recreated particle",
+        200, 2, 3, "Mass of the recreated particle",
         true);
     
     c31->SaveAs((filename + "_reco2.pdf").c_str());
@@ -454,16 +458,16 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
                 "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/indiv_partial2/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
-    initialize(evc, part_type);
+    initialize_particles(evc, part_type);
     filter(evc);
-    analyze_data(evc, "histogram1");
+//    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
 //    analyze_reco1(evc, "histogram2", part_type);
