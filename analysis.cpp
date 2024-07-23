@@ -1,5 +1,6 @@
 #include "TCanvas.h"
 #include "TFile.h"
+#include "TMath.h"
 #include <iostream>
 #include <math.h>
 #include "EventCollector.h"
@@ -22,7 +23,9 @@ void initialize_particles(EventCollector& evc, std::string part) {
 }
 
 void initialize_protons(EventCollector& evc) {
+    std::cout << "Initializing protons." << std::endl;
     evc.initialize_protons();
+    std::cout << "Finished initializing protons" << std::endl;
 }
 
 /**
@@ -34,6 +37,16 @@ void initialize_protons(EventCollector& evc) {
  */
 Double_t CauchyDist(Double_t *x, Double_t *par) {
     return par[2] * par[0] / (2 * (pow(par[0], 2) / 4 + pow(x[0] - par[1], 2)));
+}
+
+Double_t LandauDist(Double_t *x, Double_t *par) {
+    return par[2] * TMath::Landau(x[0], par[0], par[1]);
+}
+
+Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
+    Double_t p1[3] = {par[0],par[1],par[2]};
+    Double_t p2[3] = {par[3],par[4],par[5]};
+    return CauchyDist(x, p1) + LandauDist(x, p2) + par[6];
 }
 
 /**
@@ -90,18 +103,6 @@ void filter(EventCollector& evc) {
         }
     );
 
-    // Same as above, just with event-based filtering instead of particle-based
-/*
-    f1->SetParameters(0, 0.1, 50);
-    evc.filter_events_distribution(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < event->ntracks; ++i)
-            values[i] = event->get_particle(0, 0, i)->dxy;
-            return values;
-        },
-        f1, 3, 100, -0.5, 0.5, "Title");
-*/
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
@@ -109,17 +110,6 @@ void filter(EventCollector& evc) {
         }
     );
 
-    // Same as above, just with event-based filtering instead of particle-based
-/*
-    evc.filter_events_distribution(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < event->ntracks; ++i)
-            values[i] = event->get_particle(0, 0, i)->dz;
-            return values;
-        },
-        "gaus", 3);
-*/
     // No elastic protons
     evc.filter_events([](Event * event) {
         double px = 0;
@@ -361,8 +351,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     TCanvas *c21 = new TCanvas("c21", "c21");
     c21->Draw();
 
-    float min = 0.2;
-    float max = 2.6;
+    float min = 0.6;
+    float max = 1.6;
     if (type == "pion" ) {
         min = 0.2;
         max = 2.6;
@@ -381,12 +371,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             return values;
         }, 240, min, max, 240, min, max, "Mass of recreated particles, assumed " + type + "s",
         true, "m_p1 (GeV)", "m_p2 (GeV)");
-
-    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    f1->SetParameters(0.1, 1.02, 30);
-    f1->SetParNames("Sigma", "Mean", "Scale");
-
-    //h21->Fit("CauchyFit", "", "", 1.01, 1.03);
     
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
 
@@ -406,12 +390,24 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 0.77 - 0.15 || mass > 0.77 + 0.15)
+                if (mass < 1.0275 - 0.0385 || mass > 1.0275 + 0.0385)
                     return false;
             }
             return true;
         }
     );
+
+    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
+    f1->SetParameters(0.1, 0.77, 3400);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+
+    TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
+    //f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
+    f2->SetParameters(0.05, 1, 1400, 0.6, 0.12, 90000, 0);
+    f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
+
+    //h22->Fit("CauchyFit", "", "", 0.68, 0.8);
+    h22->Fit("CauchyLandau", "", "", 0.9, 1.6);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
 }
@@ -428,7 +424,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 /*
     evc.filter_events(
         [](Event *event) {
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < event->particles[2].size(); ++i) {
                 if (event->get_particle(2, i, 0)->eta > 0.65)
                     return false;
             }
@@ -448,7 +444,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        200, 2, 3, "Mass of the recreated particle",
+        100, 2, 3, "Mass of the recreated particle",
         true);
     
     c31->SaveAs((filename + "_reco2.pdf").c_str());
@@ -458,7 +454,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
@@ -466,6 +462,7 @@ int main()
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize_particles(evc, part_type);
+//    initialize_protons(evc);
     filter(evc);
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);

@@ -69,14 +69,14 @@ void EventCollector::initialize_events(bool isNew) {
 
 void EventCollector::initialize_protons() {
   TChain *chain = new TChain("hugetree");
-  chain->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons/TOTEM*.root?#tree");
+  chain->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons/TOTEM20.root?#tree");
 
   TTreeReader myReader(chain);
   TTreeReaderValue<unsigned long long> EV(myReader, "EventNum");
-  TTreeReaderValue<float> ThxR(myReader, "pr_ptx_a");
-  TTreeReaderValue<float> ThxL(myReader, "pr_ptx_b");
-  TTreeReaderValue<float> ThyR(myReader, "pr_pty_a");
-  TTreeReaderValue<float> ThyL(myReader, "pr_pty_b");
+  TTreeReaderValue<double> ThxR(myReader, "pr_ptx_a");
+  TTreeReaderValue<double> ThxL(myReader, "pr_ptx_b");
+  TTreeReaderValue<double> ThyR(myReader, "pr_pty_a");
+  TTreeReaderValue<double> ThyL(myReader, "pr_pty_b");
 
   for (Event* &event : events) {
     while (myReader.Next()) {
