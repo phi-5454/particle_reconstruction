@@ -183,16 +183,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         },
         70, 0.12, 0.19, "Primary vertex radial position", true, "Distance (mm)", "Events/1 μm");
-/*
-    // Proton X momentum sum vs. Y momentum sum
-    TH2* h12 = evc.create_2Dhistogram(
-        [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
-        }, 100, -2, 2, 75, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
-        "Px of protons (GeV)", "Py of protons (GeV)");
-*/
+
     c11->cd(3);
     // Particle smallest distance from the primary vertex in xy-plane
     TH1* h13 = evc.create_1Dhistogram(
@@ -334,6 +325,52 @@ void analyze_data(EventCollector& evc, std::string filename) {
 
     c13->SaveAs((filename + "_dataC.pdf").c_str());
 
+    TCanvas *c14 = new TCanvas("c14", "c14");
+    c14->DivideSquare(4);
+    c14->Draw();
+
+    c14->cd(1);
+    // X momentums of the two protons
+    TH2* h41 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(1)->px};
+        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton 1 X momentum vs. proton 2 X momentum", true,
+        "Px of proton 1 (GeV)", "Px of proton 2 (GeV)");
+
+    c14->cd(2);
+    // Y momentums of the two protons
+    TH2* h42 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->py};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(1)->py};
+        }, 400, -1, 1, 400, -1, 1, "Proton 1 Y momentum vs. proton 2 Y momentum", true,
+        "Py of proton 1 (GeV)", "Py of proton 2 (GeV)");
+
+    c14->cd(3);
+    // Transverse momentums of the two protons
+    TH2* h43 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{sqrt(pow(event->get_proton(0)->py, 2) + pow(event->get_proton(0)->px, 2))};
+        }, [](Event *event) {
+            return std::vector<double>{sqrt(pow(event->get_proton(1)->py, 2) + pow(event->get_proton(1)->px, 2))};
+        }, 300, 0, 1.5, 300, 0, 1.5, "Proton 1 pt vs. proton 2 pt", true,
+        "Pt of proton 1 (GeV)", "Pt of proton 2 (GeV)");
+
+    c14->cd(4);
+    // Proton X momentum sum vs. Y momentum sum
+    TH2* h44 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
+        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
+        "Px of protons (GeV)", "Py of protons (GeV)");
+    
+    c14->SaveAs((filename + "_dataD.pdf").c_str());
+
     std::cout << "Finished analyzing data." << std::endl;
 }
 
@@ -351,8 +388,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     TCanvas *c21 = new TCanvas("c21", "c21");
     c21->Draw();
 
-    float min = 0.6;
-    float max = 1.6;
+    float min = 0.9;
+    float max = 2.1;
     if (type == "pion" ) {
         min = 0.2;
         max = 2.6;
@@ -384,30 +421,30 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     h22->GetXaxis()->SetTitle("Mass (GeV)");
     h22->GetYaxis()->SetTitle("Events/10 MeV");
     h22->Draw("E");
-
+/*
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 1.0275 - 0.0385 || mass > 1.0275 + 0.0385)
+                if (mass < 0.76 - 0.0385 || mass > 1.0275 + 0.0385)
                     return false;
             }
             return true;
         }
     );
-
+*/
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.1, 0.77, 3400);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
-    //f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
-    f2->SetParameters(0.05, 1, 1400, 0.6, 0.12, 90000, 0);
+    f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
+    //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
     //h22->Fit("CauchyFit", "", "", 0.68, 0.8);
-    h22->Fit("CauchyLandau", "", "", 0.9, 1.6);
+    h22->Fit("CauchyLandau", "", "", 0, 2);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
 }
@@ -454,17 +491,17 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/indiv_partial2/TOTEM*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/v1.2/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize_particles(evc, part_type);
 //    initialize_protons(evc);
     filter(evc);
-//    analyze_data(evc, "histogram1");
+    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
 //    analyze_reco1(evc, "histogram2", part_type);

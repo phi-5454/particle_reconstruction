@@ -79,13 +79,20 @@ public:
     void add_particle(double p, double pt, double eta, double phi, int q, double dxy, double dz, double ptErr,
                       double dxyErr, double dzErr, int i, int j);
 
+    
+    void add_proton(double Thx, double Thy, double px, double py);
+
+
     /**
      * @brief Adds a proton to the event
      * 
      * @param Thx ThxL/R
      * @param Thy ThyL/R
      */
-    void add_proton(double Thx, double Thy);
+    void add_proton(double Thx, double Thy) {
+        add_proton(Thx, Thy, 0, 0);
+    }
+
 
     /**
      * @brief Get the particle object at location [i][j][k]

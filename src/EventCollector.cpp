@@ -4,6 +4,7 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TH1.h"
+#include "TTree.h"
 #include "TTreeReader.h"
 #include "TTreeReaderArray.h"
 #include <string>
@@ -14,11 +15,15 @@ EventCollector::EventCollector(std::string in, std::string out) {
 }
 
 void EventCollector::initialize_events(bool isNew) {
-  TChain *chain = new TChain("hugetree");
+  TChain *chain_part = new TChain("tree_part");
+  TChain *chain_prot = new TChain("tree_prot");
 
-  chain->Add(this->filepath.c_str());
+  chain_part->Add(this->filepath.c_str());
+  chain_prot->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons_small/TOTEM20.root?#tree");
+  chain_prot->BuildIndex("EventNum");
+  chain_part->AddFriend(chain_prot);
 
-  TTreeReader myReader(chain);
+  TTreeReader myReader(chain_part);
   TTreeReaderValue<float> zPV(myReader, "zPV");
   TTreeReaderValue<Int_t> ntrk(myReader, "ntrk");
   TTreeReaderValue<unsigned long long> eventN(myReader, "EventNum");
@@ -33,13 +38,17 @@ void EventCollector::initialize_events(bool isNew) {
   TTreeReaderValue<float> ThxL(myReader, "ThxL");
   TTreeReaderValue<float> ThyR(myReader, "ThyR");
   TTreeReaderValue<float> ThyL(myReader, "ThyL");
-
+/*
+  TTreeReaderValue<double> PtxR(myReader, "pr_ptx_a");
+  TTreeReaderValue<double> PtxL(myReader, "pr_ptx_b");
+  TTreeReaderValue<double> PtyR(myReader, "pr_pty_a");
+  TTreeReaderValue<double> PtyL(myReader, "pr_pty_b");
+*/
   TTreeReaderValue<float> xPV(myReader, "xPV");
   TTreeReaderValue<float> yPV(myReader, "yPV");
   TTreeReaderArray<float> dxyErr(myReader, "trk_dxyerr");
   TTreeReaderArray<float> dzErr(myReader, "trk_dzerr");
   TTreeReaderArray<float> ptErr(myReader, "trk_pterr");
-
 
   while (myReader.Next()) {
     Event *ev;
@@ -62,6 +71,8 @@ void EventCollector::initialize_events(bool isNew) {
         ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0, 0, 0, 0);
       }
     }
+//    ev->add_proton(*ThxR, *ThyR, *PtxR, *PtyR);
+//    ev->add_proton(*ThxL, *ThyL, *PtxL, *PtyL);
     ev->add_proton(*ThxR, *ThyR);
     ev->add_proton(*ThxL, *ThyL);
   }
@@ -69,7 +80,7 @@ void EventCollector::initialize_events(bool isNew) {
 
 void EventCollector::initialize_protons() {
   TChain *chain = new TChain("hugetree");
-  chain->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons/TOTEM20.root?#tree");
+  chain->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons/TOTEM*.root?#tree");
 
   TTreeReader myReader(chain);
   TTreeReaderValue<unsigned long long> EV(myReader, "EventNum");

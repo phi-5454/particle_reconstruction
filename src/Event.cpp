@@ -33,9 +33,9 @@ void Event::add_particle(double p, double pt, double eta, double phi, int q, dou
     add_particle(p, pt, eta, phi, q, dxy, dz, 0, ptErr, dxyErr, dzErr, i, j);
 }
 
-void Event::add_proton(double Thx, double Thy)
+void Event::add_proton(double Thx, double Thy, double px, double py)
 {
-    Proton* proton = new Proton(Thx, Thy);
+    Proton* proton = new Proton(Thx, Thy, px, py);
     protons.push_back(proton);
 }
 

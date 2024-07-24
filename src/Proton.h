@@ -19,7 +19,7 @@ public:
      * @param Thx ThxL/R
      * @param Thy ThyL/R
      */
-    Proton(double Thx, double Thy);
+    Proton(double Thx, double Thy, double px, double py);
 
 private:
     /**

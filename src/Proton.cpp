@@ -1,9 +1,11 @@
 #include "Proton.h"
 
-Proton::Proton(double Thx, double Thy)
+Proton::Proton(double Thx, double Thy, double px, double py)
 {
     this->Thx = Thx;
     this->Thy = Thy;
+    this->px = px;
+    this->py = py;
 
     calculate_momenta();
 }
