@@ -119,7 +119,7 @@ void filter(EventCollector& evc) {
             px += prot->px;
             py += prot->py;
         }
-        return (abs(px) > 0.05 && abs(py) > 0.05);
+        return (abs(px) > 0.1 && abs(py) > 0.1);
     });
 
     // Four track events
@@ -389,10 +389,10 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     c21->Draw();
 
     float min = 0.9;
-    float max = 2.1;
+    float max = 1.1;
     if (type == "pion" ) {
         min = 0.2;
-        max = 2.6;
+        max = 1.4;
     }
 
     TH2 *h21 = evc.create_2Dhistogram(
@@ -406,7 +406,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
-        }, 240, min, max, 240, min, max, "Mass of recreated particles, assumed " + type + "s",
+        }, 100, min, max, 100, min, max, "Mass of recreated particles, assumed " + type + "s",
         true, "m_p1 (GeV)", "m_p2 (GeV)");
     
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
@@ -435,7 +435,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     );
 */
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    f1->SetParameters(0.1, 0.77, 3400);
+    //f1->SetParameters(0.15, 0.77, 3400);
+    f1->SetParameters(0.01, 1.02, 300);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
@@ -443,8 +444,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    //h22->Fit("CauchyFit", "", "", 0.68, 0.8);
-    h22->Fit("CauchyLandau", "", "", 0, 2);
+    //h22->Fit("CauchyFit", "", "", 0.69, 0.8);
+    h22->Fit("CauchyFit", "", "", 1.012, 1.026);
+    //h22->Fit("CauchyLandau", "", "", 0, 2);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
 }
@@ -491,7 +493,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
@@ -501,12 +503,12 @@ int main()
     initialize_particles(evc, part_type);
 //    initialize_protons(evc);
     filter(evc);
-    analyze_data(evc, "histogram1");
+//    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-//    analyze_reco1(evc, "histogram2", part_type);
+/*    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
-
+*/
     return 0;
 }

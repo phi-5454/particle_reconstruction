@@ -16,12 +16,12 @@ EventCollector::EventCollector(std::string in, std::string out) {
 
 void EventCollector::initialize_events(bool isNew) {
   TChain *chain_part = new TChain("tree_part");
-  TChain *chain_prot = new TChain("tree_prot");
+  //TChain *chain_prot = new TChain("tree_prot");
 
   chain_part->Add(this->filepath.c_str());
-  chain_prot->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons_small/TOTEM20.root?#tree");
-  chain_prot->BuildIndex("EventNum");
-  chain_part->AddFriend(chain_prot);
+  //chain_prot->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons_small/TOTEM20.root?#tree");
+  //chain_prot->BuildIndex("EventNum");
+  //chain_part->AddFriend(chain_prot);
 
   TTreeReader myReader(chain_part);
   TTreeReaderValue<float> zPV(myReader, "zPV");
