@@ -421,22 +421,10 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     h22->GetXaxis()->SetTitle("Mass (GeV)");
     h22->GetYaxis()->SetTitle("Events/10 MeV");
     h22->Draw("E");
-/*
-    evc.filter_reconstruction(
-        [](std::vector<Particle*> parts) {
-            if (parts.size() == 0) return false;
-            for (int i = 0; i < parts.size(); ++i) {
-                double mass = parts[i]->mass;
-                if (mass < 0.76 - 0.0385 || mass > 1.0275 + 0.0385)
-                    return false;
-            }
-            return true;
-        }
-    );
-*/
+
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    //f1->SetParameters(0.15, 0.77, 3400);
-    f1->SetParameters(0.01, 1.02, 300);
+    f1->SetParameters(0.15, 0.77, 340);
+    //f1->SetParameters(0.01, 1.02, 100);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
@@ -444,11 +432,24 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    //h22->Fit("CauchyFit", "", "", 0.69, 0.8);
-    h22->Fit("CauchyFit", "", "", 1.012, 1.026);
+    h22->Fit("CauchyFit", "", "", 0.69, 0.8);
+    //h22->Fit("CauchyFit", "", "", 1.008, 1.026);
     //h22->Fit("CauchyLandau", "", "", 0, 2);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
+
+    evc.filter_reconstruction(
+        [](std::vector<Particle*> parts) {
+            if (parts.size() == 0) return false;
+            for (int i = 0; i < parts.size(); ++i) {
+                double mass = parts[i]->mass;
+                if (mass < 0.74347 - 0.12092 || mass > 0.74347 + 0.12092)
+                    return false;
+            }
+            return true;
+        }
+    );
+
 }
 
 /**
@@ -460,17 +461,18 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 void analyze_reco2(EventCollector& evc, std::string filename) {
     std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
-/*
+
     evc.filter_events(
         [](Event *event) {
             for (int i = 0; i < event->particles[2].size(); ++i) {
-                if (event->get_particle(2, i, 0)->eta > 0.65)
+                if (event->get_particle(2, i, 0)->eta > 1)
                     return false;
             }
             return true;
         }
     );
-*/
+
+
     TCanvas *c31 = new TCanvas("c31", "c31");
     c31->Draw();
 
@@ -483,8 +485,13 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        100, 2, 3, "Mass of the recreated particle",
+        50, 2.1, 2.3, "Mass of the recreated particle",
         true);
+
+    TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
+    f1->SetParameters(0.02, 2.22, 6);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+    h31->Fit("CauchyFit", "", "", 2.2, 2.24);
     
     c31->SaveAs((filename + "_reco2.pdf").c_str());
 
@@ -493,7 +500,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
@@ -506,9 +513,9 @@ int main()
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-/*    analyze_reco1(evc, "histogram2", part_type);
+//    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
-*/
+
     return 0;
 }
