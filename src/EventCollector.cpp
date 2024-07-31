@@ -38,12 +38,12 @@ void EventCollector::initialize_events(bool isNew) {
   TTreeReaderValue<float> ThxL(myReader, "ThxL");
   TTreeReaderValue<float> ThyR(myReader, "ThyR");
   TTreeReaderValue<float> ThyL(myReader, "ThyL");
-/*
+
   TTreeReaderValue<double> PtxR(myReader, "pr_ptx_a");
   TTreeReaderValue<double> PtxL(myReader, "pr_ptx_b");
   TTreeReaderValue<double> PtyR(myReader, "pr_pty_a");
   TTreeReaderValue<double> PtyL(myReader, "pr_pty_b");
-*/
+
   TTreeReaderValue<float> xPV(myReader, "xPV");
   TTreeReaderValue<float> yPV(myReader, "yPV");
   TTreeReaderArray<float> dxyErr(myReader, "trk_dxyerr");
@@ -71,10 +71,10 @@ void EventCollector::initialize_events(bool isNew) {
         ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0, 0, 0, 0);
       }
     }
-//    ev->add_proton(*ThxR, *ThyR, *PtxR, *PtyR);
-//    ev->add_proton(*ThxL, *ThyL, *PtxL, *PtyL);
-    ev->add_proton(*ThxR, *ThyR);
-    ev->add_proton(*ThxL, *ThyL);
+    ev->add_proton(*ThxR, *ThyR, *PtxR, *PtyR);
+    ev->add_proton(*ThxL, *ThyL, *PtxL, *PtyL);
+//    ev->add_proton(*ThxR, *ThyR);
+//   ev->add_proton(*ThxL, *ThyL);
   }
 }
 

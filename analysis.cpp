@@ -99,14 +99,14 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.07; // Three sigmas
+            return abs(part->dxy) < 0.045; // Three sigmas 0.07
         }
     );
 
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.08; // Three sigmas
+            return abs(part->dz) < 0.06; // Three sigmas 0.08
         }
     );
 
@@ -174,7 +174,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         60, -15, 15, "Primary vertex Z position", true, "Distance (mm)", "Events/0,5 mm");
 
-    h11->Fit("gaus");
     c11->cd(2);
 
     // Primary vertex XY position
@@ -185,7 +184,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         70, 0.12, 0.19, "Primary vertex radial position", true, "Distance (mm)", "Events/1 μm");
 
-    h12->Fit("gaus");
     c11->cd(3);
 
     // Particle smallest distance from the primary vertex in xy-plane
@@ -198,7 +196,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 μm");
 
-    h13->Fit("gaus");
     c11->cd(4);
 
     // Particle smallest distance from the primary vertex in z-axis
@@ -211,7 +208,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 μm");
 
-    h14->Fit("gaus");
     c11->SaveAs((filename + "_dataA.pdf").c_str());
 
     TCanvas *c12 = new TCanvas("c12", "c12");
@@ -298,7 +294,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         100, -5, 5, "Particle dxy / dxyErr", true, "dxy/dxy error", "Events/0,1");
 
-    h31->Fit("gaus");
     c13->cd(2);
 
     // Particle dz / dz error
@@ -311,7 +306,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         200, -5, 5, "Particle dz / dzErr", true, "dz/dz error", "Events/0,05");
     
-    h32->Fit("gaus");
     c13->cd(3);
 
     // Particle pt error / pt
@@ -459,7 +453,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             if (parts.size() == 0) return false;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 1.021 - 0.034 || mass > 1.021 + 0.034)
+                if (mass < 0.749 - 0.236 || mass > 0.749 + 0.236)
                     return false;
             }
             return true;
@@ -501,7 +495,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        150, 2, 3.5, "Mass of the recreated particle",
+        150, 1, 2.5, "Mass of the recreated particle",
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -516,11 +510,10 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-//               "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/minimal/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/v1.2/TOTEM2*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize_particles(evc, part_type);

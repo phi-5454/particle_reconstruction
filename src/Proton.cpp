@@ -7,7 +7,7 @@ Proton::Proton(double Thx, double Thy, double px, double py)
     this->px = px;
     this->py = py;
 
-    calculate_momenta();
+    //calculate_momenta();
 }
 
 void Proton::calculate_momenta()
