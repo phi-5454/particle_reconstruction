@@ -1,6 +1,8 @@
 #include "TCanvas.h"
 #include "TFile.h"
 #include "TMath.h"
+#include "TLine.h"
+#include "TEllipse.h"
 #include <iostream>
 #include <math.h>
 #include "EventCollector.h"
@@ -99,14 +101,14 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.045; // Three sigmas 0.07
+            return abs(part->dxy) < 0.0652992; // Three sigmas
         }
     );
 
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.06; // Three sigmas 0.08
+            return abs(part->dz) < 0.0773883; // Three sigmas
         }
     );
 
@@ -119,7 +121,7 @@ void filter(EventCollector& evc) {
             px += prot->px;
             py += prot->py;
         }
-        return sqrt(px*px / 0.0324 + py*py / 0.0081) > 1; // Axle length is one sigma
+        return sqrt(px*px / 0.035363 + py*py / 0.00776161) > 1; // Axle length is one sigma
     });
 
     // Four track events
@@ -148,6 +150,22 @@ void reconstruct(EventCollector& evc) {
     std::cout << "Finished reconstructing." << std::endl;
 }
 
+void draw_limits(TH1* hist, double sigmas) {
+    hist->Fit("gaus");
+    TF1* fit = hist->GetFunction("gaus");
+    double max = hist->GetMaximum();
+    double down = fit->GetParameter(1) - sigmas * fit->GetParameter(2);
+    double up = fit->GetParameter(1) + sigmas * fit->GetParameter(2);
+    TLine* l1 = new TLine(down, 0, down, max);
+    TLine* l2 = new TLine(up, 0, up, max);
+    l1->SetLineStyle(9);
+    l1->SetLineColor(7);
+    l2->SetLineStyle(9);
+    l2->SetLineColor(7);
+    l1->Draw();
+    l2->Draw();
+}
+
 /**
  * @brief Analyzes the initial data that hasn't been reconstructed
  * 
@@ -174,6 +192,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         60, -15, 15, "Primary vertex Z position", true, "Distance (mm)", "Events/0,5 mm");
 
+    draw_limits(h11, 3);
     c11->cd(2);
 
     // Primary vertex XY position
@@ -184,6 +203,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         70, 0.12, 0.19, "Primary vertex radial position", true, "Distance (mm)", "Events/1 μm");
 
+    draw_limits(h12, 3);
     c11->cd(3);
 
     // Particle smallest distance from the primary vertex in xy-plane
@@ -196,6 +216,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         },
         200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 μm");
 
+    draw_limits(h13, 3);
     c11->cd(4);
 
     // Particle smallest distance from the primary vertex in z-axis
@@ -207,6 +228,8 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         },
         200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 μm");
+
+    draw_limits(h14, 3);
 
     c11->SaveAs((filename + "_dataA.pdf").c_str());
 
@@ -284,6 +307,40 @@ void analyze_data(EventCollector& evc, std::string filename) {
     c13->Draw();
 
     c13->cd(1);
+    // Check for loopers in an event
+    TH1* h34 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values;
+            for (int i = 0; i < event->ntracks - 1; ++i) {
+                Particle* part1 = event->get_particle(0, 0, i);
+                for (int j = i + 1; j < event->ntracks; ++j) {
+                    Particle* part2 = event->get_particle(0, 0, j);
+                    values.push_back(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)));
+                }
+            }
+            return values;
+        }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, "Sum of total momentum (GeV)", "Events/5 MeV");
+
+    TLine* l1 = new TLine(0.05, 0, 0.05, h34->GetMaximum());
+    l1->SetLineStyle(9);
+    l1->SetLineColor(7);
+    l1->Draw();
+
+    c13->cd(2);
+    // Proton X momentum sum vs. Y momentum sum
+    TH2* h44 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
+        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
+        "Px of protons (GeV)", "Py of protons (GeV)");
+
+    TEllipse* elli = new TEllipse(0, 0, 0.18805, 0.0881);
+    elli->SetFillStyle(0);
+    elli->SetLineColor(2);
+    elli->Draw();
+    /*
     // Particle dxy / dxy error
     TH1F* h31 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -319,20 +376,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         100, 0, 0.1, "Particle ptErr / pt", true, "pt error / pt", "Events/0,1%");
 
     c13->cd(4);
-    // Check for loopers in an event
-    evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values;
-            for (int i = 0; i < event->ntracks - 1; ++i) {
-                Particle* part1 = event->get_particle(0, 0, i);
-                for (int j = i + 1; j < event->ntracks; ++j) {
-                    Particle* part2 = event->get_particle(0, 0, j);
-                    values.push_back(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)));
-                }
-            }
-            return values;
-        }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, "Sum of total momentum (GeV)", "Events/5 MeV");
-
+*/
     c13->SaveAs((filename + "_dataC.pdf").c_str());
 
     TCanvas *c14 = new TCanvas("c14", "c14");
@@ -370,14 +414,6 @@ void analyze_data(EventCollector& evc, std::string filename) {
         "Pt of proton 1 (GeV)", "Pt of proton 2 (GeV)");
 
     c14->cd(4);
-    // Proton X momentum sum vs. Y momentum sum
-    TH2* h44 = evc.create_2Dhistogram(
-        [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
-        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
-        "Px of protons (GeV)", "Py of protons (GeV)");
     
     c14->SaveAs((filename + "_dataD.pdf").c_str());
 
@@ -416,7 +452,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
-        }, 100, min, max, 100, min, max, "Mass of recreated particles, assumed " + type + "s",
+        }, 120, min, max, 120, min, max, "Mass of recreated particles, assumed " + type + "s",
         true, "m_p1 (GeV)", "m_p2 (GeV)");
     
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
@@ -433,8 +469,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     h22->Draw("E");
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    //f1->SetParameters(0.15, 0.77, 340);
-    f1->SetParameters(0.01, 1.02, 100);
+    f1->SetParameters(0.15, 0.77, 340);
+    //f1->SetParameters(0.01, 1.02, 100);
     f1->SetParNames("Sigma", "Mean", "Scale");
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
@@ -442,7 +478,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    //h22->Fit("CauchyFit", "", "", 0.69, 0.8);
+    h22->Fit("CauchyFit", "", "", 0.69, 0.8);
     //h22->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h22->Fit("CauchyLandau", "", "", 0, 2);
 
@@ -513,7 +549,7 @@ int main()
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize_particles(evc, part_type);
@@ -522,9 +558,9 @@ int main()
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-//    analyze_reco1(evc, "histogram2", part_type);
+/*    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
-
+*/
     return 0;
 }
