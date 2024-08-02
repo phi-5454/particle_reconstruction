@@ -62,7 +62,7 @@ void filter(EventCollector& evc) {
     // Cauchy distribution for filtering
     TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
     f1->SetParNames("Sigma", "Mean", "Scale");
-
+/*
     // Non-two-track events
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
@@ -98,12 +98,7 @@ void filter(EventCollector& evc) {
         },
         "gaus", 3);
 
-    // Particle smallest distance from the primary vertex in xy-plane
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dxy) < 0.0652992; // Three sigmas
-        }
-    );
+
 
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
@@ -123,7 +118,14 @@ void filter(EventCollector& evc) {
         }
         return sqrt(px*px / 0.035363 + py*py / 0.00776161) > 1; // Axle length is one sigma
     });
+*/
 
+    // Particle smallest distance from the primary vertex in xy-plane
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dxy) < 0.0652992; // Three sigmas
+        }
+    );
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
@@ -184,52 +186,43 @@ void analyze_data(EventCollector& evc, std::string filename) {
     c11->Draw();
 
     c11->cd(1);
-    // Primary vertex Z position
-    TH1F* h11 = evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values = {event->zPV};
-            return values;
-        },
-        60, -15, 15, "Primary vertex Z position", true, "Distance (mm)", "Events/0,5 mm");
-
-    draw_limits(h11, 3);
-    c11->cd(2);
-
-    // Primary vertex XY position
-    TH1* h12 = evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
-            return values;
-        },
-        70, 0.12, 0.19, "Primary vertex radial position", true, "Distance (mm)", "Events/1 μm");
-
-    draw_limits(h12, 3);
-    c11->cd(3);
-
     // Particle smallest distance from the primary vertex in xy-plane
-    TH1* h13 = evc.create_1Dhistogram(
+    TH1* h11 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->dxy;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 μm");
+        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 um");
 
-    draw_limits(h13, 3);
-    c11->cd(4);
+    draw_limits(h11, 3);
+    c11->cd(2);
 
     // Particle smallest distance from the primary vertex in z-axis
-    TH1F* h14 = evc.create_1Dhistogram(
+    TH1F* h12 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->dz;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 μm");
+        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 um");
 
-    draw_limits(h14, 3);
+    draw_limits(h12, 3);
+    c11->cd(3);
+
+    // dxy for different particle pairs
+    TH1* h13 = evc.create_1Dhistogram(
+        [](Event *event) {
+            double avg = 0;
+            double value = 0;
+            for (int i = 0; i < 4; ++i)
+                avg += event->get_particle(0, 0, i)->dxy / 4;
+            for (int i = 0; i < 4; ++i)
+                value += pow(avg - event->get_particle(0, 0, i)->dxy, 2);
+            return std::vector<double>{sqrt(value)};
+        }, 100, 0, 0.1, "Std for dxy of events", true, "Distance (mm)", "Events");
 
     c11->SaveAs((filename + "_dataA.pdf").c_str());
 
@@ -237,7 +230,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
     c12->DivideSquare(4);
     c12->Draw();
 
-    c12->cd(1);
+/*    c12->cd(1);
     // Particle dxy vs. azimuthal angle
         TH2* h22 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -253,7 +246,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true, "dxy (mm)", "Azimuthal angle (rad)");
     h22->SetMinimum(5);
     
-    c12->cd(2);
+    c12->cd(2);*/
     // Particle dz versus pseudorapidity
     TH2* h21 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -268,7 +261,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
-
+/*
     c12->cd(3);
     // Particle azimuthal angle
     TH1* h23 = evc.create_1Dhistogram(
@@ -285,7 +278,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
     TH1* h24 = h21->ProjectionY();
     h24->SetTitle("Particle pseudorapidity");
     h24->Draw("E");
-/*
+
     // Event transverse momentum
     evc.create_1Dhistogram(
         [](Event *event) {
@@ -340,43 +333,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
     elli->SetFillStyle(0);
     elli->SetLineColor(2);
     elli->Draw();
-    /*
-    // Particle dxy / dxy error
-    TH1F* h31 = evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->dxy / event->get_particle(0, 0, i)->dxyErr;
-            return values;
-        },
-        100, -5, 5, "Particle dxy / dxyErr", true, "dxy/dxy error", "Events/0,1");
 
-    c13->cd(2);
-
-    // Particle dz / dz error
-    TH1F* h32 = evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->dz / event->get_particle(0, 0, i)->dzErr;
-            return values;
-        },
-        200, -5, 5, "Particle dz / dzErr", true, "dz/dz error", "Events/0,05");
-    
-    c13->cd(3);
-
-    // Particle pt error / pt
-    evc.create_1Dhistogram(
-        [](Event *event) {
-            std::vector<double> values(4);
-            for (int i = 0; i < 4; ++i)
-                values[i] = event->get_particle(0, 0, i)->ptErr / event->get_particle(0, 0, i)->pt;
-            return values;
-        },
-        100, 0, 0.1, "Particle ptErr / pt", true, "pt error / pt", "Events/0,1%");
-
-    c13->cd(4);
-*/
     c13->SaveAs((filename + "_dataC.pdf").c_str());
 
     TCanvas *c14 = new TCanvas("c14", "c14");
@@ -549,16 +506,16 @@ int main()
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM40*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
 
     initialize_particles(evc, part_type);
 //    initialize_protons(evc);
     filter(evc);
-//    analyze_data(evc, "histogram1");
-    reconstruct(evc);
+    analyze_data(evc, "histogram1");
+/*    reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-/*    analyze_reco1(evc, "histogram2", part_type);
+    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
 */
