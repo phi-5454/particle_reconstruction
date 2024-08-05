@@ -5,6 +5,7 @@
 #include "TEllipse.h"
 #include <iostream>
 #include <math.h>
+#include <fstream>
 #include "EventCollector.h"
 #include "TApplication.h"
 
@@ -582,6 +583,208 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
     std::cout << "Finished analyzing the second iteration of recreated particles." << std::endl;
 }
 
+int write_to_csv(const std::string& filename, const EventCollector& ec){
+    std::ofstream file(filename);
+
+    //TODO: error checking on file open/close
+
+    // Write the header
+    file
+            << "pa1_p" << ","
+            << "pa1_pt" << ","
+            << "pa1_ptErr" << ","
+            << "pa1_px" << ","
+            << "pa1_py" << ","
+            << "pa1_pz" << ","
+            << "pa1_eta" << ","
+            << "pa1_theta" << ","
+            << "pa1_phi" << ","
+            << "pa1_q" << ","
+            << "pa1_dxy" << ","
+            << "pa1_dxyErr" << ","
+            << "pa1_dz" << ","
+            << "pa1_dzErr" << ","
+            << "pa1_mass" << ","
+            << "pa1_E" << ",";
+    file
+            << "pa2_p" << ","
+            << "pa2_pt" << ","
+            << "pa2_ptErr" << ","
+            << "pa2_px" << ","
+            << "pa2_py" << ","
+            << "pa2_pz" << ","
+            << "pa2_eta" << ","
+            << "pa2_theta" << ","
+            << "pa2_phi" << ","
+            << "pa2_q" << ","
+            << "pa2_dxy" << ","
+            << "pa2_dxyErr" << ","
+            << "pa2_dz" << ","
+            << "pa2_dzErr" << ","
+            << "pa2_mass" << ","
+            << "pa2_E" << ",";
+    file
+            << "paf_p" << ","
+            << "paf_pt" << ","
+            << "paf_ptErr" << ","
+            << "paf_px" << ","
+            << "paf_py" << ","
+            << "paf_pz" << ","
+            << "paf_eta" << ","
+            << "paf_theta" << ","
+            << "paf_phi" << ","
+            << "paf_q" << ","
+            << "paf_dxy" << ","
+            << "paf_dxyErr" << ","
+            << "paf_dz" << ","
+            << "paf_dzErr" << ","
+            << "paf_mass" << ","
+            << "paf_E" << ",";
+    file
+            << "pr1_p" << ","
+            << "pr1_Thx" << ","
+            << "pr1_Thy" << ","
+            << "pr1_px" << ","
+            << "pr1_py" << ","
+            << "pr1_pr_px" << ","
+            << "pr1_pr_py" << ","
+            << "pr1_pr_pz" << ","
+            << "pr1_pr_ptx" << ","
+            << "pr1_pr_pty" << ","
+            << "pr1_pr_ptx_sigma" << ","
+            << "pr1_pr_pty_sigma" << ","
+            << "pr1_pr_posx" << ","
+            << "pr1_pr_posy" << ","
+            << "pr1_pr_posx_sigma" << ","
+            << "pr1_pr_posy_sigma" << "," ;
+    file
+            << "pr2_p" << ","
+            << "pr2_Thx" << ","
+            << "pr2_Thy" << ","
+            << "pr2_px" << ","
+            << "pr2_py" << ","
+            << "pr2_pr_px" << ","
+            << "pr2_pr_py" << ","
+            << "pr2_pr_pz" << ","
+            << "pr2_pr_ptx" << ","
+            << "pr2_pr_pty" << ","
+            << "pr2_pr_ptx_sigma" << ","
+            << "pr2_pr_pty_sigma" << ","
+            << "pr2_pr_posx" << ","
+            << "pr2_pr_posy" << ","
+            << "pr2_pr_posx_sigma" << ","
+            << "pr2_pr_posy_sigma" << "," ;
+    file << "\n";
+
+    // Write each struct as a CSV row
+    for (const auto& event : ec.events) {
+        // CMS particles
+        for (int i = 0; i < event->particles[1].size(); ++i) {
+            auto pa1 = event->get_particle(1,i,0);
+            auto pa2 = event->get_particle(1,i,1);
+            auto paf = event->get_particle(2,i,0);
+            auto pr1 = event->get_proton(0);
+            auto pr2 = event->get_proton(1);
+            file
+                    << pa1->p << ","
+                    << pa1->pt << ","
+                    << pa1->ptErr << ","
+                    << pa1->px << ","
+                    << pa1->py << ","
+                    << pa1->pz << ","
+                    << pa1->eta << ","
+                    << pa1->theta << ","
+                    << pa1->phi << ","
+                    << pa1->q << ","
+                    << pa1->dxy << ","
+                    << pa1->dxyErr << ","
+                    << pa1->dz << ","
+                    << pa1->dzErr << ","
+                    << pa1->mass << ","
+                    << pa1->E << ",";
+
+            file
+                    << pa2->p << ","
+                    << pa2->pt << ","
+                    << pa2->ptErr << ","
+                    << pa2->px << ","
+                    << pa2->py << ","
+                    << pa2->pz << ","
+                    << pa2->eta << ","
+                    << pa2->theta << ","
+                    << pa2->phi << ","
+                    << pa2->q << ","
+                    << pa2->dxy << ","
+                    << pa2->dxyErr << ","
+                    << pa2->dz << ","
+                    << pa2->dzErr << ","
+                    << pa2->mass << ","
+                    << pa2->E << ",";
+
+            file
+                    << paf->p << ","
+                    << paf->pt << ","
+                    << paf->ptErr << ","
+                    << paf->px << ","
+                    << paf->py << ","
+                    << paf->pz << ","
+                    << paf->eta << ","
+                    << paf->theta << ","
+                    << paf->phi << ","
+                    << paf->q << ","
+                    << paf->dxy << ","
+                    << paf->dxyErr << ","
+                    << paf->dz << ","
+                    << paf->dzErr << ","
+                    << paf->mass << ","
+                    << paf->E << ",";
+
+            // Protons
+            file
+                    << pr1->p << ","
+                    << pr1->Thx << ","
+                    << pr1->Thy << ","
+                    << pr1->px << ","
+                    << pr1->py << ","
+                    << pr1->pr_px << ","
+                    << pr1->pr_py << ","
+                    << pr1->pr_pz << ","
+                    << pr1->pr_ptx << ","
+                    << pr1->pr_pty << ","
+                    << pr1->pr_ptx_sigma << ","
+                    << pr1->pr_pty_sigma << ","
+                    << pr1->pr_posx << ","
+                    << pr1->pr_posy << ","
+                    << pr1->pr_posx_sigma << ","
+                    << pr1->pr_posy_sigma << "," ;
+
+            file
+                    << pr2->p << ","
+                    << pr2->Thx << ","
+                    << pr2->Thy << ","
+                    << pr2->px << ","
+                    << pr2->py << ","
+                    << pr2->pr_px << ","
+                    << pr2->pr_py << ","
+                    << pr2->pr_pz << ","
+                    << pr2->pr_ptx << ","
+                    << pr2->pr_pty << ","
+                    << pr2->pr_ptx_sigma << ","
+                    << pr2->pr_pty_sigma << ","
+                    << pr2->pr_posx << ","
+                    << pr2->pr_posy << ","
+                    << pr2->pr_posx_sigma << ","
+                    << pr2->pr_posy_sigma << "," ;
+
+            file << "\n";
+        }
+
+    }
+
+    file.close();
+    return 0;
+}
+
 int main()
 {
      TApplication app("app", nullptr, nullptr);
@@ -600,12 +803,14 @@ int main()
     filter(evc);
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);
-    analyze_reco1(evc, "histogram1", part_type);
+    //analyze_reco1(evc, "histogram1", part_type);
 //    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
-    analyze_reco2(evc, "histogram1");
+    //analyze_reco2(evc, "histogram1");
 
-    app.Run();
+    write_to_csv("testcsv.csv", evc);
+
+    //app.Run();
 
     return 0;
 }
