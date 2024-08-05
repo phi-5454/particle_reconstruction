@@ -6,6 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include "EventCollector.h"
+#include "TApplication.h"
 
 /**
  * @brief Create object for each event and fill it with particles. Also give all particles a certain mass.
@@ -583,11 +584,17 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
 int main()
 {
+     TApplication app("app", nullptr, nullptr);
+
+
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM40*.root?#tree"
-               ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root");
+                //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM40*.root?#tree"
+               //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
+            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
+            ,"particle_reconstruction_results.root"
+               );
 
     initialize_particles(evc, part_type);
     filter(evc);
@@ -597,6 +604,8 @@ int main()
 //    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
+
+    app.Run();
 
     return 0;
 }
