@@ -78,30 +78,6 @@ void EventCollector::initialize_events(bool isNew) {
   }
 }
 
-void EventCollector::initialize_protons() {
-  TChain *chain = new TChain("hugetree");
-  chain->Add("/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/improved_protons/TOTEM*.root?#tree");
-
-  TTreeReader myReader(chain);
-  TTreeReaderValue<unsigned long long> EV(myReader, "EventNum");
-  TTreeReaderValue<double> ThxR(myReader, "pr_ptx_a");
-  TTreeReaderValue<double> ThxL(myReader, "pr_ptx_b");
-  TTreeReaderValue<double> ThyR(myReader, "pr_pty_a");
-  TTreeReaderValue<double> ThyL(myReader, "pr_pty_b");
-
-  for (Event* &event : events) {
-    while (myReader.Next()) {
-      if (event->EventNum == *EV) {
-        event->get_proton(0)->px = *ThxR;
-        event->get_proton(0)->py = *ThyR;
-        event->get_proton(1)->px = *ThxL;
-        event->get_proton(1)->py = *ThyL;
-        break;
-      }
-    }
-  }
-}
-
 void EventCollector::init_masses_and_energy(double mass) {
   for (Event *&event : events)
     for (int i = 0; i < event->ntracks; ++i) {

@@ -25,12 +25,6 @@ void initialize_particles(EventCollector& evc, std::string part) {
     std::cout << "Finished initializing events." << std::endl;
 }
 
-void initialize_protons(EventCollector& evc) {
-    std::cout << "Initializing protons." << std::endl;
-    evc.initialize_protons();
-    std::cout << "Finished initializing protons" << std::endl;
-}
-
 /**
  * @brief Cauchy or Breit-Wigner distribution function
  * 
@@ -99,7 +93,12 @@ void filter(EventCollector& evc) {
         },
         "gaus", 3);
 
-
+    // Particle smallest distance from the primary vertex in xy-plane
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dxy) < 0.0652992; // Three sigmas
+        }
+    );
 
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
@@ -120,13 +119,6 @@ void filter(EventCollector& evc) {
         return sqrt(px*px / 0.035363 + py*py / 0.00776161) > 1; // Axle length is one sigma
     });
 */
-
-    // Particle smallest distance from the primary vertex in xy-plane
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dxy) < 0.0652992; // Three sigmas
-        }
-    );
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
 
@@ -169,19 +161,7 @@ void draw_limits(TH1* hist, double sigmas) {
     l2->Draw();
 }
 
-/**
- * @brief Analyzes the initial data that hasn't been reconstructed
- * 
- * @param evc EventCollector
- * @param filename Name of the created histogram pdf file
- */
-void analyze_data(EventCollector& evc, std::string filename) {
-    std::cout << "Analyzing data." << std::endl;
-    TFile *results = TFile::Open(evc.results.c_str(), "");
-
-    TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
-    f1->SetParNames("Sigma", "Mean", "Scale");
-
+void analyze_impact(EventCollector& evc, std::string filename) {
     TCanvas *c11 = new TCanvas("c11", "c11");
     c11->DivideSquare(4);
     c11->Draw();
@@ -198,8 +178,8 @@ void analyze_data(EventCollector& evc, std::string filename) {
         200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 um");
 
     draw_limits(h11, 3);
-    c11->cd(2);
 
+    c11->cd(2);
     // Particle smallest distance from the primary vertex in z-axis
     TH1F* h12 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -211,9 +191,9 @@ void analyze_data(EventCollector& evc, std::string filename) {
         200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 um");
 
     draw_limits(h12, 3);
-    c11->cd(3);
 
-    // dxy for different particle pairs
+    c11->cd(3);
+    // dxy standard deviation
     TH1* h13 = evc.create_1Dhistogram(
         [](Event *event) {
             double avg = 0;
@@ -225,13 +205,28 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return std::vector<double>{sqrt(value)};
         }, 100, 0, 0.1, "Std for dxy of events", true, "Distance (mm)", "Events");
 
-    c11->SaveAs((filename + "_dataA.pdf").c_str());
+    c11->cd(4);
+    // dz standard deviation
+    TH1* h14 = evc.create_1Dhistogram(
+        [](Event *event) {
+            double avg = 0;
+            double value = 0;
+            for (int i = 0; i < 4; ++i)
+                avg += event->get_particle(0, 0, i)->dz / 4;
+            for (int i = 0; i < 4; ++i)
+                value += pow(avg - event->get_particle(0, 0, i)->dz, 2);
+            return std::vector<double>{sqrt(value)};
+        }, 100, 0, 0.1, "Std for dz of events", true, "Distance (mm)", "Events");
 
+    c11->SaveAs((filename + "_data_impact.pdf").c_str());
+}
+
+void analyze_angles(EventCollector& evc, std::string filename) {
     TCanvas *c12 = new TCanvas("c12", "c12");
     c12->DivideSquare(4);
     c12->Draw();
 
-/*    c12->cd(1);
+    c12->cd(1);
     // Particle dxy vs. azimuthal angle
         TH2* h22 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -247,7 +242,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
         }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true, "dxy (mm)", "Azimuthal angle (rad)");
     h22->SetMinimum(5);
     
-    c12->cd(2);*/
+    c12->cd(2);
     // Particle dz versus pseudorapidity
     TH2* h21 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -262,7 +257,7 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
-/*
+
     c12->cd(3);
     // Particle azimuthal angle
     TH1* h23 = evc.create_1Dhistogram(
@@ -274,35 +269,75 @@ void analyze_data(EventCollector& evc, std::string filename) {
         }, 110, -3.3, 3.3, "Particle track azimuthal angle", true, "Azimuthal angle (rad)", "Events/20 mrad");
 
     c12->cd(4);
-
-    // Pseudorapidity as a function of dz
+    // Particle pseudorapidity
     TH1* h24 = h21->ProjectionY();
     h24->SetTitle("Particle pseudorapidity");
     h24->Draw("E");
 
-    // Event transverse momentum
-    evc.create_1Dhistogram(
-        [](Event *event) {
-            double px = 0;
-            double py = 0;
-            for (int i = 0; i < 4; ++i) {
-                Particle* part = event->get_particle(0, 0, i);
-                px += part->px;
-                py += part->py;
-            }
-            return std::vector<double>{sqrt(pow(px, 2) + pow(py, 2))};
-        },
-        100, 0, 2, "Event transverse momentum", true, "Transverse momentum (GeV)", "Events/20 MeV");
-*/
-    c12->SaveAs((filename + "_dataB.pdf").c_str());
+    c12->SaveAs((filename + "_data_angles.pdf").c_str());
+}
 
+void analyze_protons(EventCollector& evc, std::string filename) {
     TCanvas *c13 = new TCanvas("c13", "c13");
     c13->DivideSquare(4);
     c13->Draw();
 
     c13->cd(1);
+    // X momentums of the two protons
+    TH2* h31 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(1)->px};
+        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton 1 X momentum vs. proton 2 X momentum", true,
+        "Px of proton 1 (GeV)", "Px of proton 2 (GeV)");
+
+    c13->cd(2);
+    // Y momentums of the two protons
+    TH2* h32 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->py};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(1)->py};
+        }, 400, -1, 1, 400, -1, 1, "Proton 1 Y momentum vs. proton 2 Y momentum", true,
+        "Py of proton 1 (GeV)", "Py of proton 2 (GeV)");
+
+    c13->cd(3);
+    // Transverse momentums of the two protons
+    TH2* h33 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{sqrt(pow(event->get_proton(0)->py, 2) + pow(event->get_proton(0)->px, 2))};
+        }, [](Event *event) {
+            return std::vector<double>{sqrt(pow(event->get_proton(1)->py, 2) + pow(event->get_proton(1)->px, 2))};
+        }, 300, 0, 1.5, 300, 0, 1.5, "Proton 1 pt vs. proton 2 pt", true,
+        "Pt of proton 1 (GeV)", "Pt of proton 2 (GeV)");
+
+    c13->cd(4);
+    // Proton X momentum sum vs. Y momentum sum
+    TH2* h34 = evc.create_2Dhistogram(
+        [](Event* event) {
+            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
+        }, [](Event *event) {
+            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
+        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
+        "Px of protons (GeV)", "Py of protons (GeV)");
+
+    TEllipse* elli = new TEllipse(0, 0, 0.18805, 0.0881);
+    elli->SetFillStyle(0);
+    elli->SetLineColor(2);
+    elli->Draw();
+    
+    c13->SaveAs((filename + "_data_protons.pdf").c_str());
+}
+
+void analyze_filters(EventCollector& evc, std::string filename) {
+    TCanvas *c14 = new TCanvas("c14", "c14");
+    c14->DivideSquare(4);
+    c14->Draw();
+
+    c14->cd(1);
     // Check for loopers in an event
-    TH1* h34 = evc.create_1Dhistogram(
+    TH1* h41 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values;
             for (int i = 0; i < event->ntracks - 1; ++i) {
@@ -315,65 +350,92 @@ void analyze_data(EventCollector& evc, std::string filename) {
             return values;
         }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, "Sum of total momentum (GeV)", "Events/5 MeV");
 
-    TLine* l1 = new TLine(0.05, 0, 0.05, h34->GetMaximum());
+    TLine* l1 = new TLine(0.05, 0, 0.05, h41->GetMaximum());
     l1->SetLineStyle(9);
     l1->SetLineColor(7);
     l1->Draw();
 
-    c13->cd(2);
-    // Proton X momentum sum vs. Y momentum sum
-    TH2* h44 = evc.create_2Dhistogram(
+    c14->SaveAs((filename + "_data_filters.pdf").c_str());
+}
+
+void analyze_impact_minmax(EventCollector& evc, std::string filename) {
+    TCanvas* c15 = new TCanvas("c15", "c15");
+    c15->DivideSquare(4);
+    c15->Draw();
+
+    c15->cd(1);
+    // Min dxy of event
+    TH1* h51 = evc.create_1Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->px + event->get_proton(1)->px};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(0)->py + event->get_proton(1)->py};
-        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
-        "Px of protons (GeV)", "Py of protons (GeV)");
+            std::vector<double> values;
+            double min = abs(event->get_particle(0, 0, 0)->dxy);
+            for (int i = 1; i < 4; ++i) {
+                double dxy = abs(event->get_particle(0, 0, i)->dxy);
+                if (dxy < min) min = dxy;
+            }
+            return std::vector<double>{min};
+        }, 150, 0, 0.05, "Min dxy of event", true, "Distance (mm)", "Events/0,003 mm");
 
-    TEllipse* elli = new TEllipse(0, 0, 0.18805, 0.0881);
-    elli->SetFillStyle(0);
-    elli->SetLineColor(2);
-    elli->Draw();
-
-    c13->SaveAs((filename + "_dataC.pdf").c_str());
-
-    TCanvas *c14 = new TCanvas("c14", "c14");
-    c14->DivideSquare(4);
-    c14->Draw();
-
-    c14->cd(1);
-    // X momentums of the two protons
-    TH2* h41 = evc.create_2Dhistogram(
+    c15->cd(2);
+    // Min dz of event
+    TH1* h52 = evc.create_1Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->px};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(1)->px};
-        }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton 1 X momentum vs. proton 2 X momentum", true,
-        "Px of proton 1 (GeV)", "Px of proton 2 (GeV)");
+            std::vector<double> values;
+            double min = abs(event->get_particle(0, 0, 0)->dz);
+            for (int i = 1; i < 4; ++i) {
+                double dz = abs(event->get_particle(0, 0, i)->dz);
+                if (dz < min) min = dz;
+            }
+            return std::vector<double>{min};
+        }, 140, 0, 0.07, "Min dz of event", true, "Distance (mm)" ,"Events/0,005 mm");
 
-    c14->cd(2);
-    // Y momentums of the two protons
-    TH2* h42 = evc.create_2Dhistogram(
+    c15->cd(3);
+    // Max dxy of event
+    TH1* h53 = evc.create_1Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->py};
-        }, [](Event *event) {
-            return std::vector<double>{event->get_proton(1)->py};
-        }, 400, -1, 1, 400, -1, 1, "Proton 1 Y momentum vs. proton 2 Y momentum", true,
-        "Py of proton 1 (GeV)", "Py of proton 2 (GeV)");
+            std::vector<double> values;
+            double max = abs(event->get_particle(0, 0, 0)->dxy);
+            for (int i = 1; i < 4; ++i) {
+                double dxy = abs(event->get_particle(0, 0, i)->dxy);
+                if (dxy > max) max = dxy;
+            }
+            return std::vector<double>{max};;
+        }, 100, 0, 1, "Max dxy of event", true, "Distance (mm)", "Events/0,05 mm");
 
-    c14->cd(3);
-    // Transverse momentums of the two protons
-    TH2* h43 = evc.create_2Dhistogram(
+    c15->cd(4);
+    // Max dz of event
+    TH1* h54 = evc.create_1Dhistogram(
         [](Event* event) {
-            return std::vector<double>{sqrt(pow(event->get_proton(0)->py, 2) + pow(event->get_proton(0)->px, 2))};
-        }, [](Event *event) {
-            return std::vector<double>{sqrt(pow(event->get_proton(1)->py, 2) + pow(event->get_proton(1)->px, 2))};
-        }, 300, 0, 1.5, 300, 0, 1.5, "Proton 1 pt vs. proton 2 pt", true,
-        "Pt of proton 1 (GeV)", "Pt of proton 2 (GeV)");
+            std::vector<double> values;
+            double max = abs(event->get_particle(0, 0, 0)->dz);
+            for (int i = 1; i < 4; ++i) {
+                double dz = abs(event->get_particle(0, 0, i)->dz);
+                if (dz > max) max = dz;
+            }
+            return std::vector<double>{max};
+        }, 100, 0, 2, "Max dz of events", true, "Distance (mm)", "Events/0,05 mm");
 
-    c14->cd(4);
-    
-    c14->SaveAs((filename + "_dataD.pdf").c_str());
+    c15->SaveAs((filename + "_data_impact_minmax.pdf").c_str());
+}
+
+/**
+ * @brief Analyzes the initial data that hasn't been reconstructed
+ * 
+ * @param evc EventCollector
+ * @param filename Name of the created histogram pdf file
+ */
+void analyze_data(EventCollector& evc, std::string filename) {
+    std::cout << "Analyzing data." << std::endl;
+    TFile *results = TFile::Open(evc.results.c_str(), "");
+
+    TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+
+    analyze_impact(evc, filename);
+    analyze_impact_minmax(evc, filename);
+    analyze_angles(evc, filename);
+    analyze_protons(evc, filename);
+    analyze_filters(evc, filename);
 
     std::cout << "Finished analyzing data." << std::endl;
 }
@@ -412,13 +474,12 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             return values;
         }, 120, min, max, 120, min, max, "Mass of recreated particles, assumed " + type + "s",
         true, "m_p1 (GeV)", "m_p2 (GeV)");
+
     
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
 
     TCanvas* c22 = new TCanvas("c2", "c2");
     c22->Draw();
-
-    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
     
     TH1 *h22 = h21->ProjectionX();
     h22->Add(h21->ProjectionY());
@@ -454,6 +515,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
         }
     );
 
+    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
 /**
@@ -476,11 +538,29 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
         }
     );
 */
-
     TCanvas *c31 = new TCanvas("c31", "c31");
     c31->Draw();
+    c31->SetLogz();
 
     c31->cd(1);
+    TH1* h30 = evc.create_2Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(4);
+            for (int i = 0; i < event->particles[1].size(); ++i) {
+                for (int j = 0; j < 2; ++j)
+                    values[i] = event->get_particle(1, i, j)->pz;
+            }
+            return values;
+        }, [](Event *event) {
+            std::vector<double> values(4);
+            for (int i = 0; i < event->particles[1].size(); ++i) {
+                for (int j = 0; j < 2; ++j)
+                    values[i] = event->get_particle(1, i, j)->pt;
+            }
+            return values;
+        }, 200, -10, 10, 100, 0, 1.5, "Particle pz vs pt", true, "Longitudinal momentum (GeV)", "Transverse momentum (GeV)");
+/*
+    c31->cd(2);
     TH1 *h31 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
@@ -496,7 +576,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
     f1->SetParameters(0.02, 2.22, 6);
     f1->SetParNames("Sigma", "Mean", "Scale");
     //h31->Fit("CauchyFit", "", "", 2.2, 2.24);
-    
+    */
     c31->SaveAs((filename + "_reco2.pdf").c_str());
 
     std::cout << "Finished analyzing the second iteration of recreated particles." << std::endl;
@@ -517,15 +597,14 @@ int main()
                );
 
     initialize_particles(evc, part_type);
-//    initialize_protons(evc);
     filter(evc);
-    analyze_data(evc, "histogram1");
-/*    reconstruct(evc);
+//    analyze_data(evc, "histogram1");
+    reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-    analyze_reco1(evc, "histogram2", part_type);
+//    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
-*/
+
     app.Run();
 
     return 0;
