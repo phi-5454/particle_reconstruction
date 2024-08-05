@@ -35,12 +35,6 @@ public:
     void initialize_events(bool isNew);
 
     /**
-     * @brief Adds the new proton data from separate files.
-     * 
-     */
-    void initialize_protons();
-
-    /**
      * @brief Finds and returns the lowest and highest values of given lambda
      * function
      *
