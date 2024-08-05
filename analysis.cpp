@@ -782,6 +782,7 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
     }
 
     file.close();
+    std::cout << "Wrote data to " << filename << std::endl;
     return 0;
 }
 
@@ -801,16 +802,16 @@ int main()
 
     initialize_particles(evc, part_type);
     filter(evc);
-//    analyze_data(evc, "histogram1");
+    analyze_data(evc, "histogram1");
     reconstruct(evc);
     //analyze_reco1(evc, "histogram1", part_type);
-//    analyze_reco1(evc, "histogram2", part_type);
+    analyze_reco1(evc, "histogram2", part_type);
     reconstruct(evc);
-    //analyze_reco2(evc, "histogram1");
+    analyze_reco2(evc, "histogram1");
 
-    write_to_csv("testcsv.csv", evc);
+    //write_to_csv("testcsv.csv", evc);
 
-    //app.Run();
+    app.Run();
 
     return 0;
 }
