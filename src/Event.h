@@ -13,7 +13,12 @@ class Event
 {
 public:
     int ntracks; // Amount of particles in the event, not including protons
-    std::vector<std::vector<std::vector<Particle *>>> particles; // The particles, initial and reconstructed, associated with an event
+    // The particles, initial and reconstructed, associated with an event
+    /// particles[a][b][c]:
+    /// a: The reconstruction layer
+    /// b: The alternate combination of lower-level particles on the given reconstruction layer
+    /// c: The particle, reconstructed or track-based.
+    std::vector<std::vector<std::vector<Particle *>>> particles;
     std::vector<Proton*> protons; // The protons associated with an event
     double zPV; // Z coordinate of the primary vertex of the event
     double xPV; // X coordinate of the primary vertex of the event
