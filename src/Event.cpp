@@ -23,7 +23,7 @@ Event::Event(int ntracks, double zPV, long eventNum) : Event(ntracks, zPV, 0, 0,
 void Event::add_particle(double p, double pt, double eta, double phi, int q, double dxy, double dz, double mass, double ptErr,
                       double dxyErr, double dzErr, int i, int j)
 {
-    Particle* part = new Particle(p, pt, eta, phi, q, dxy, dz, mass, ptErr, dxyErr, dzErr);
+    auto* part = new Particle(p, pt, eta, phi, q, dxy, dz, mass, ptErr, dxyErr, dzErr);
     particles[i][j].push_back(part);
 }
 
@@ -35,9 +35,27 @@ void Event::add_particle(double p, double pt, double eta, double phi, int q, dou
 
 void Event::add_proton(double Thx, double Thy, double px, double py)
 {
-    Proton* proton = new Proton(Thx, Thy, px, py);
+    auto* proton = new Proton(Thx, Thy, px, py);
     protons.push_back(proton);
 }
+
+void Event::add_proton(double Thx, double Thy, double px, double py,
+                       double pr_px,
+                       double pr_py,
+                       double pr_pz,
+                       double pr_ptx,
+                       double pr_pty,
+                       double pr_ptx_sigma,
+                       double pr_pty_sigma,
+                       double pr_posx,
+                       double pr_posy,
+                       double pr_posx_sigma,
+                       double pr_posy_sigma)
+{
+    auto* proton = new Proton(Thx, Thy, px, py, pr_px, pr_py, pr_pz, pr_ptx, pr_pty, pr_ptx_sigma, pr_pty_sigma, pr_posx, pr_posy, pr_posx_sigma, pr_posy_sigma);
+    protons.push_back(proton);
+}
+
 
 Particle* Event::get_particle(int i, int j, int k)
 {

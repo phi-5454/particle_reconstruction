@@ -172,5 +172,9 @@ public:
      */
     void print();
 
+    void
+    add_proton(double Thx, double Thy, double px, double py, double pr_px, double pr_py, double pr_pz, double pr_ptx,
+               double pr_pty, double pr_ptx_sigma, double pr_pty_sigma, double pr_posx, double pr_posy,
+               double pr_posx_sigma, double pr_posy_sigma);
 };
 #endif
