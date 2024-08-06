@@ -107,7 +107,7 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.0652992; // Three sigmas
+            return abs(part->dxy) < 0.0435328; // Two sigmas
         }
     );
 
@@ -179,7 +179,7 @@ void draw_limits(TH1* hist, double sigmas) {
 }
 
 /**
- * @brief Draw histograms about dxy and dz
+ * @brief Draw histograms of dxy and dz
  * 
  * @param evc EventCollector
  * @param filename Result pdf filename
@@ -244,6 +244,12 @@ void analyze_impact(EventCollector& evc, std::string filename) {
     c11->SaveAs((filename + "_data_impact.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms of phi and eta
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_angles(EventCollector& evc, std::string filename) {
     TCanvas *c12 = new TCanvas("c12", "c12");
     c12->DivideSquare(4);
@@ -300,6 +306,12 @@ void analyze_angles(EventCollector& evc, std::string filename) {
     c12->SaveAs((filename + "_data_angles.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms of protons
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_protons(EventCollector& evc, std::string filename) {
     TCanvas *c13 = new TCanvas("c13", "c13");
     c13->DivideSquare(4);
@@ -345,7 +357,7 @@ void analyze_protons(EventCollector& evc, std::string filename) {
         }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
         "Px of protons (GeV)", "Py of protons (GeV)");
 
-    TEllipse* elli = new TEllipse(0, 0, 0.18805, 0.0881);
+    TEllipse* elli = new TEllipse(0, 0, 0.132972, 0.0623);
     elli->SetFillStyle(0);
     elli->SetLineColor(2);
     elli->Draw();
@@ -353,6 +365,12 @@ void analyze_protons(EventCollector& evc, std::string filename) {
     c13->SaveAs((filename + "_data_protons.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms used in filtering
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_filters(EventCollector& evc, std::string filename) {
     TCanvas *c14 = new TCanvas("c14", "c14");
     c14->DivideSquare(4);
@@ -381,6 +399,12 @@ void analyze_filters(EventCollector& evc, std::string filename) {
     c14->SaveAs((filename + "_data_filters.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms of min and max dxy and dz
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_impact_minmax(EventCollector& evc, std::string filename) {
     TCanvas* c15 = new TCanvas("c15", "c15");
     c15->DivideSquare(4);
@@ -483,6 +507,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 
     TCanvas *c21 = new TCanvas("c21", "c21");
     c21->Draw();
+
     // Mass distribution of each reconstructed particle pair
     TH2 *h21 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -502,6 +527,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 
     TCanvas* c22 = new TCanvas("c22", "c22");
     c22->Draw();
+    
     // Mass distribution of second particle if first is assumed rho/phi
     TH1* h22 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -547,20 +573,15 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
+/**
+ * @brief Filters particles reconstructed from two tracks
+ * 
+ * @param evc EventCollector
+ */
 void filter_reco1(EventCollector& evc) {
-    /*
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
-
-            double mass0 = parts[0]->mass;
-            double mass1 = parts[1]->mass;
-            double mass_sum = mass1 + mass0;
-            if(mass_sum >= 2.220|| mass_sum <= 1.602) return false;
-            //if(mass0 <= 0.703) return false;
-            //if(mass1 <= 0.757) return false;
-            //if(mass0 < 0.749 - 0.236 || mass0 > 0.749 + 0.236) return false;
-
 
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
@@ -570,8 +591,6 @@ void filter_reco1(EventCollector& evc) {
             return true;
         }
     );
-    */
-    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
 /**
@@ -844,30 +863,29 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
 
 int main()
 {
-     TApplication app("app", nullptr, nullptr);
-
+    TApplication app("app", nullptr, nullptr);
 
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
-               //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
-            ,"particle_reconstruction_results.root"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM20*.root?#tree"
+               ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
+//            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
+//            ,"particle_reconstruction_results.root"
                );
 
     initialize_particles(evc, part_type);
     filter(evc);
-    analyze_data(evc, "histogram1");
-/*    reconstruct(evc);
-    analyze_reco1(evc, "histogram1", part_type);
+//    analyze_data(evc, "histogram1");
+    reconstruct(evc);
+//    analyze_reco1(evc, "histogram1", part_type);
     filter_reco1(evc);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
 
-    write_to_csv("testcsv.csv", evc);
-*/
-    app.Run();
+//    write_to_csv("testcsv.csv", evc);
+
+//    app.Run();
 
     return 0;
 }
