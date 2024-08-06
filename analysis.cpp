@@ -583,11 +583,13 @@ void filter_reco1(EventCollector& evc) {
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
 
+            /*
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
                 if (mass < 0.755 - 0.132 || mass > 0.755 + 0.132)
                     return false;
             }
+            */
             return true;
         }
     );
@@ -770,13 +772,13 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
 
     // Write each struct as a CSV row
     for (const auto& event : ec.events) {
-        // CMS particles
         for (int i = 0; i < event->particles[1].size(); ++i) {
             auto pa1 = event->get_particle(1,i,0);
             auto pa2 = event->get_particle(1,i,1);
             auto paf = event->get_particle(2,i,0);
             auto pr1 = event->get_proton(0);
             auto pr2 = event->get_proton(1);
+            // CMS particles
             file
                     << pa1->p << ","
                     << pa1->pt << ","
