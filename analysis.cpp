@@ -542,8 +542,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             }
             return true;
         }
-        */
     );
+    */
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
