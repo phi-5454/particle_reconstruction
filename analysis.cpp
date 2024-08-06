@@ -521,10 +521,20 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
-/*
+    /*
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
+
+            double mass0 = parts[0]->mass;
+            double mass1 = parts[1]->mass;
+            double mass_sum = mass1 + mass0;
+            if(mass_sum >= 2.220|| mass_sum <= 1.602) return false;
+            //if(mass0 <= 0.703) return false;
+            //if(mass1 <= 0.757) return false;
+            //if(mass0 < 0.749 - 0.236 || mass0 > 0.749 + 0.236) return false;
+
+
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
                 if (mass < 0.749 - 0.236 || mass > 0.749 + 0.236)
@@ -532,8 +542,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             }
             return true;
         }
+        */
     );
-*/
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
@@ -813,10 +823,10 @@ int main()
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
-               ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-//            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
-//            ,"particle_reconstruction_results.root"
+                //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+               //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
+            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
+            ,"particle_reconstruction_results.root"
                );
 
     initialize_particles(evc, part_type);
@@ -828,7 +838,7 @@ int main()
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
 
-    //write_to_csv("testcsv.csv", evc);
+    write_to_csv("testcsv.csv", evc);
 
     app.Run();
 
