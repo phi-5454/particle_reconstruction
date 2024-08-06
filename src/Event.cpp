@@ -100,8 +100,6 @@ void Event::reconstruct()
     std::vector<std::vector<Particle *>> init_particles = particles[particles.size() - 1];
     particles.push_back(std::vector<std::vector<Particle*>>{});
 
-    //std::cout << particles[0][0].size() << "\t" << ntracks << std::endl;
-
     for (int j = 0; j < init_particles.size(); ++j)
     { 
         if (init_particles[0].size() == 2) {
