@@ -548,7 +548,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 }
 
 void filter_reco1(EventCollector& evc) {
-    /*
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
@@ -556,21 +555,22 @@ void filter_reco1(EventCollector& evc) {
             double mass0 = parts[0]->mass;
             double mass1 = parts[1]->mass;
             double mass_sum = mass1 + mass0;
-            if(mass_sum >= 2.220|| mass_sum <= 1.602) return false;
+            //if(mass_sum >= 1.853|| mass_sum <= 1.556) return false;
             //if(mass0 <= 0.703) return false;
             //if(mass1 <= 0.757) return false;
             //if(mass0 < 0.749 - 0.236 || mass0 > 0.749 + 0.236) return false;
 
 
+            /*
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
                 if (mass < 0.749 - 0.236 || mass > 0.749 + 0.236)
                     return false;
             }
+            */
             return true;
         }
     );
-    */
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
@@ -734,13 +734,13 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
 
     // Write each struct as a CSV row
     for (const auto& event : ec.events) {
-        // CMS particles
         for (int i = 0; i < event->particles[1].size(); ++i) {
             auto pa1 = event->get_particle(1,i,0);
             auto pa2 = event->get_particle(1,i,1);
             auto paf = event->get_particle(2,i,0);
             auto pr1 = event->get_proton(0);
             auto pr2 = event->get_proton(1);
+            // CMS particles
             file
                     << pa1->p << ","
                     << pa1->pt << ","
