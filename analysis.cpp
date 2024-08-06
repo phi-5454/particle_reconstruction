@@ -9,6 +9,9 @@
 #include "EventCollector.h"
 #include "TApplication.h"
 
+const float RHO_MASS = 770;
+const float PHI_MASS = 1021;
+
 /**
  * @brief Create object for each event and fill it with particles. Also give all particles a certain mass.
  * 
@@ -517,6 +520,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             }
             return values;
         }, 100, 0.9, 2.5, "Mass of another particle when first is assumed rho", false, "Mass (GeV)", "Events");
+    h22->Draw();
 
     // Mass distribution of reconstructed particles
     TH1* h23 = evc.create_1Dhistogram(
@@ -556,6 +560,7 @@ void filter_reco1(EventCollector& evc) {
             double mass1 = parts[1]->mass;
             double mass_sum = mass1 + mass0;
             //if(mass_sum >= 1.853|| mass_sum <= 1.556) return false;
+            if(mass_sum >= 1.690|| mass_sum <= 1.390) return false;
             //if(mass0 <= 0.703) return false;
             //if(mass1 <= 0.757) return false;
             //if(mass0 < 0.749 - 0.236 || mass0 > 0.749 + 0.236) return false;
@@ -859,12 +864,13 @@ int main()
     initialize_particles(evc, part_type);
     filter(evc);
     analyze_data(evc, "histogram1");
-/*    reconstruct(evc);
+    reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
     filter_reco1(evc);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
 
+/*
     write_to_csv("testcsv.csv", evc);
 */
     app.Run();
