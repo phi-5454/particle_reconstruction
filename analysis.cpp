@@ -252,7 +252,7 @@ void analyze_impact(EventCollector& evc, std::string filename) {
  */
 void analyze_angles(EventCollector& evc, std::string filename) {
     TCanvas *c12 = new TCanvas("c12", "c12");
-    c12->DivideSquare(4);
+    //c12->DivideSquare(4);
     c12->Draw();
 
     c12->cd(1);
@@ -284,7 +284,7 @@ void analyze_angles(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->eta;
             return values;
-        }, 100, -0.3, 0.3, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
+        }, 100, -0.1, 0.1, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
 
     c12->cd(3);
@@ -421,7 +421,7 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dxy < min) min = dxy;
             }
             return std::vector<double>{min};
-        }, 150, 0, 0.05, "Min dxy of event", true, "Distance (mm)", "Events/0,003 mm");
+        }, 150, 0, 0.03, "Min dxy of event", true, "Distance (mm)", "Events/0,003 mm");
 
     c15->cd(2);
     // Min dz of event
@@ -434,7 +434,7 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dz < min) min = dz;
             }
             return std::vector<double>{min};
-        }, 140, 0, 0.07, "Min dz of event", true, "Distance (mm)" ,"Events/0,005 mm");
+        }, 140, 0, 0.03, "Min dz of event", true, "Distance (mm)" ,"Events/0,005 mm");
 
     c15->cd(3);
     // Max dxy of event
@@ -447,7 +447,7 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dxy > max) max = dxy;
             }
             return std::vector<double>{max};;
-        }, 100, 0, 1, "Max dxy of event", true, "Distance (mm)", "Events/0,05 mm");
+        }, 90, 0, 0.045, "Max dxy of event", true, "Distance (mm)", "Events/0,05 mm");
 
     c15->cd(4);
     // Max dz of event
@@ -460,7 +460,7 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dz > max) max = dz;
             }
             return std::vector<double>{max};
-        }, 100, 0, 2, "Max dz of events", true, "Distance (mm)", "Events/0,05 mm");
+        }, 100, 0, 0.06, "Max dz of events", true, "Distance (mm)", "Events/0,05 mm");
 
     c15->SaveAs((filename + "_data_impact_minmax.pdf").c_str());
 }
@@ -542,7 +542,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 }
             }
             return values;
-        }, 120, min, max, "Mass of another particle when first is assumed rho", false, "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of another particle when first is assumed rho meson", true, "Mass (GeV)", "Events");
 
     // Mass distribution of reconstructed particles
     TH1* h23 = evc.create_1Dhistogram(
@@ -552,7 +552,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of recreated particles", false, "Mass (GeV)", "Events");
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
@@ -564,7 +564,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    h23->Fit("CauchyFit", "", "", 0.69, 0.85);
+    //h23->Fit("CauchyFit", "", "", 0.69, 0.85);
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
@@ -582,14 +582,12 @@ void filter_reco1(EventCollector& evc) {
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
-
-            /*
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 0.755 - 0.132 || mass > 0.755 + 0.132)
+                //if (mass < 1.021 - 0.034 || mass > 1.021 + 0.034)
+                if (mass < 0.751 - 0.132 || mass > 0.751 + 0.132)
                     return false;
             }
-            */
             return true;
         }
     );
@@ -617,9 +615,8 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 */
     TCanvas *c31 = new TCanvas("c31", "c31");
     c31->Draw();
-/*
+
     c31->SetLogz();
-    c31->cd(1);
     // Reconstructed particle momentum phase space
     TH2* h30 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -636,8 +633,10 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
                     values[2*i + j] = event->get_particle(1, i, j)->pt;
             }
             return values;
-        }, 200, -10, 10, 100, 0, 1.5, "Particle pz vs pt", true, "Longitudinal momentum (GeV)", "Transverse momentum (GeV)");
-*/
+        }, 200, -10, 10, 100, 0, 1.5, "Particle pz vs pt of rho mesons", true, "Longitudinal momentum (GeV)", "Transverse momentum (GeV)");
+    h30->SetMinimum(1);
+    h30->Draw("Colz");
+/*
     TH1 *h31 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(4);
@@ -646,9 +645,9 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        150, 1, 2.5, "Mass of the recreated particle",
+        100, 1, 3, "Mass of the recreated particle",
         true);
-
+*/
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
     f1->SetParameters(0.02, 2.22, 6);
     f1->SetParNames("Sigma", "Mean", "Scale");
@@ -882,12 +881,12 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
 
 int main()
 {
-    TApplication app("app", nullptr, nullptr);
+//    TApplication app("app", nullptr, nullptr);
 
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
 //            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
 //            ,"particle_reconstruction_results.root"
@@ -895,9 +894,9 @@ int main()
 
     initialize_particles(evc, part_type);
     filter(evc);
-//    analyze_data(evc, "histogram1");
+    analyze_data(evc, "histogram1");
     reconstruct(evc);
-    analyze_reco1(evc, "histogram1", part_type);
+//    analyze_reco1(evc, "histogram1", part_type);
     filter_reco1(evc);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
