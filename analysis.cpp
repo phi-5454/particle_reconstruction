@@ -852,7 +852,7 @@ int main()
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
                 //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
                //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-            "/home/younes/totemdata/combined/TOTEM40*.root?#tree"
+            "/home/younes/totemdata/combined/TOTEM4*.root?#tree"
             ,"particle_reconstruction_results.root"
                );
 
