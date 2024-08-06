@@ -36,10 +36,24 @@ Double_t CauchyDist(Double_t *x, Double_t *par) {
     return par[2] * par[0] / (2 * (pow(par[0], 2) / 4 + pow(x[0] - par[1], 2)));
 }
 
+/**
+ * @brief Landau distribution function
+ * 
+ * @param x X
+ * @param par Parameters: Width, location and scale
+ * @return Double_t Value of the function with given parameters
+ */
 Double_t LandauDist(Double_t *x, Double_t *par) {
     return par[2] * TMath::Landau(x[0], par[0], par[1]);
 }
 
+/**
+ * @brief Combined Cauchy and Landau distributions
+ * 
+ * @param x X
+ * @param par Parameters: Cauchy width, location and scale, Landau width, location and scale
+ * @return Double_t Value of the function with given parameters
+ */
 Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
     Double_t p1[3] = {par[0],par[1],par[2]};
     Double_t p2[3] = {par[3],par[4],par[5]};
@@ -53,10 +67,6 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
  */
 void filter(EventCollector& evc) {
     std::cout << "Filtering events." << std::endl;
-
-    // Cauchy distribution for filtering
-    TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
-    f1->SetParNames("Sigma", "Mean", "Scale");
 
     // Non-two-track events
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
@@ -103,7 +113,7 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.03 + abs(0.01*part->eta); // Three sigmas 0.0773883
+            return abs(part->dz) < 0.03 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
         }
     );
 
@@ -116,7 +126,7 @@ void filter(EventCollector& evc) {
             px += prot->px;
             py += prot->py;
         }
-        return sqrt(px*px / 0.035363 + py*py / 0.00776161) > 1; // Axle length is one sigma
+        return sqrt(px*px / 0.0176815 + py*py / 0.003880805) > 1; // Axle length is half a sigma
     });
 
     // Four track events
@@ -145,6 +155,12 @@ void reconstruct(EventCollector& evc) {
     std::cout << "Finished reconstructing." << std::endl;
 }
 
+/**
+ * @brief Draw visual lines indicating std deviations onto a histogram fitted with a gaussian distribution
+ * 
+ * @param hist Histogram to be modified
+ * @param sigmas How many sigmas away are the lines drawn
+ */
 void draw_limits(TH1* hist, double sigmas) {
     hist->Fit("gaus");
     TF1* fit = hist->GetFunction("gaus");
@@ -161,6 +177,12 @@ void draw_limits(TH1* hist, double sigmas) {
     l2->Draw();
 }
 
+/**
+ * @brief Draw histograms about dxy and dz
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_impact(EventCollector& evc, std::string filename) {
     TCanvas *c11 = new TCanvas("c11", "c11");
     c11->DivideSquare(4);
@@ -520,7 +542,11 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
     c22->SaveAs((filename + "_reco1B.pdf").c_str());
-/*
+
+    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
+}
+
+void filter_reco1(EventCollector& evc) {
     evc.filter_reconstruction(
         [](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
@@ -532,8 +558,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             return true;
         }
     );
-*/
-    std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
 /**
@@ -617,14 +641,14 @@ int main()
 
     initialize_particles(evc, part_type);
     filter(evc);
-//    analyze_data(evc, "histogram1");
-    reconstruct(evc);
+    analyze_data(evc, "histogram1");
+/*    reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-//    analyze_reco1(evc, "histogram2", part_type);
+    filter_reco1(evc);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
-
-    app.Run();
+*/
+//    app.Run();
 
     return 0;
 }
