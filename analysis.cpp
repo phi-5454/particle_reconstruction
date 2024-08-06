@@ -585,7 +585,7 @@ void filter_reco1(EventCollector& evc) {
 
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 0.755 - 0.264 || mass > 0.755 + 0.264)
+                if (mass < 0.755 - 0.132 || mass > 0.755 + 0.132)
                     return false;
             }
             return true;
@@ -668,7 +668,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             for (int i = 0; i < event->particles[2].size(); ++i)
                 values[i] = event->get_particle(2, i, 0)->eta;
             return values;
-        }, "Particle mass vs. eta", true);
+        }, 100, 1, 3, 100, -5, 5, "Particle mass vs. eta", true, "Mass (GeV)", "Pseudorapidity");
 
     c32->SaveAs((filename + "_reco2B.pdf").c_str());
 
