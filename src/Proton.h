@@ -13,9 +13,23 @@ public:
     double px; // X component of momentum
     double py; // Y component of momentum
 
+    double pr_px;
+    double pr_py;
+    double pr_pz;
+    double pr_ptx;
+    double pr_pty;
+    double pr_ptx_sigma;
+    double pr_pty_sigma;
+    double pr_posx;
+    double pr_posy;
+    double pr_posx_sigma;
+    double pr_posy_sigma;
+
+
+
     /**
      * @brief Construct a new Proton object
-     * 
+     *
      * @param Thx ThxL/R
      * @param Thy ThyL/R
      */
@@ -24,7 +38,7 @@ public:
 private:
     /**
      * @brief Calculate the x and y components of the momentum
-     * 
+     *
      */
     void calculate_momenta();
 };
