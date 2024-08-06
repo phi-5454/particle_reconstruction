@@ -9,8 +9,12 @@
 #include "EventCollector.h"
 #include "TApplication.h"
 
-const float RHO_MASS = 770;
-const float PHI_MASS = 1021;
+const float RHO_MASS = 0.754;
+//const float RHO_WIDTH = 0.236;
+//const float RHO_MASS = 0.770;
+const float RHO_WIDTH = 0.062;
+const float PHI_MASS = 1.021;
+const float PHI_WIDTH = 0.034;
 
 /**
  * @brief Create object for each event and fill it with particles. Also give all particles a certain mass.
@@ -512,14 +516,14 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             std::vector<double> values(parts.size());
             for (int i = 0; i < parts.size(); ++i) {
                 for (int j = 0; j < 2; ++j) {
-                    if (event->get_particle(1, i, j)->mass > 1.021 - 0.034 && event->get_particle(1, i, j)->mass < 1.021 + 0.034) {
+                    if (event->get_particle(1, i, j)->mass > RHO_MASS - RHO_WIDTH && event->get_particle(1, i, j)->mass < RHO_MASS + RHO_WIDTH) {
                         values[i] = event->get_particle(1, i, (j+1)%2)->mass;
                         break;
                     }
                 }
             }
             return values;
-        }, 100, 0.9, 2.5, "Mass of another particle when first is assumed rho", false, "Mass (GeV)", "Events");
+        }, 100, 0.6, 1.2, "Mass of another particle when first is assumed rho", false, "Mass (GeV)", "Events");
     h22->Draw();
 
     // Mass distribution of reconstructed particles
@@ -560,7 +564,7 @@ void filter_reco1(EventCollector& evc) {
             double mass1 = parts[1]->mass;
             double mass_sum = mass1 + mass0;
             //if(mass_sum >= 1.853|| mass_sum <= 1.556) return false;
-            if(mass_sum >= 1.690|| mass_sum <= 1.390) return false;
+            if(mass_sum <= 1.867|| mass_sum >= 2.243) return false;
             //if(mass0 <= 0.703) return false;
             //if(mass1 <= 0.757) return false;
             //if(mass0 < 0.749 - 0.236 || mass0 > 0.749 + 0.236) return false;
@@ -569,10 +573,12 @@ void filter_reco1(EventCollector& evc) {
             /*
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
-                if (mass < 0.749 - 0.236 || mass > 0.749 + 0.236)
+                //if (mass < PHI_MASS - PHI_WIDTH || mass > PHI_MASS + PHI_WIDTH)
+                    //return false;
+                if (mass < RHO_MASS - RHO_WIDTH || mass > RHO_MASS + RHO_WIDTH )
                     return false;
             }
-            */
+             */
             return true;
         }
     );
@@ -852,27 +858,26 @@ int main()
      TApplication app("app", nullptr, nullptr);
 
 
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
                 //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
                //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-            "/home/younes/totemdata/combined/TOTEM4*.root?#tree"
+            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
             ,"particle_reconstruction_results.root"
                );
 
     initialize_particles(evc, part_type);
     filter(evc);
-    analyze_data(evc, "histogram1");
+    //analyze_data(evc, "histogram1");
     reconstruct(evc);
-    analyze_reco1(evc, "histogram1", part_type);
-    filter_reco1(evc);
+    //analyze_reco1(evc, "histogram1", part_type);
+    //filter_reco1(evc);
     reconstruct(evc);
     analyze_reco2(evc, "histogram1");
 
-/*
     write_to_csv("testcsv.csv", evc);
-*/
+
     app.Run();
 
     return 0;
