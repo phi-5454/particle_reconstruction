@@ -152,6 +152,19 @@ public:
     }
 
     /**
+     * @brief Filters the original, reconstructed particle based on the lambda
+     *
+     * @tparam F A lambda function
+     * @param lambda Function used to filter
+     */
+    template <typename F> void filter_orig(F &&lambda) {
+        auto helper = std::vector<std::vector<Particle *>>(particles[2].size());
+        auto it = std::copy_if(particles[2].begin(), particles[2].end(), helper.begin(), lambda);
+        helper.resize(it - helper.begin());
+        particles[2] = helper;
+    }
+
+    /**
      * @brief Reconstructs a new particle from two given particles
      * 
      * @param p1 First particle
@@ -173,7 +186,7 @@ public:
     void print();
 
     void
-    add_proton(double Thx, double Thy, double px, double py, double pr_px, double pr_py, double pr_pz, double pr_ptx,
+    add_proton(double Thx, double Thy, double old_px, double old_py, double pr_px, double pr_py, double pr_pz, double pr_ptx,
                double pr_pty, double pr_ptx_sigma, double pr_pty_sigma, double pr_posx, double pr_posy,
                double pr_posx_sigma, double pr_posy_sigma);
 };

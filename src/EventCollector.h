@@ -326,6 +326,19 @@ public:
             event->filter_reco(lambda);
     }
 
+
+    /**
+     * @brief Filters the original, reconstructed particles
+     *
+     * @tparam F A lambda function
+     * @param lambda Function used to filter
+     */
+    template <typename F>
+    void filter_original(F &&lambda) {
+        for (Event* &event : events)
+            event->filter_orig(lambda);
+    }
+
     /**
      * @brief Initializes the masses of the particles to given value and energy
      * based on the mass
