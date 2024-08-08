@@ -811,8 +811,6 @@ void filter_reco1(EventCollector& evc) {
             //if(mass_sum <= 1.867 || mass_sum >= 2.243) return false;
 
             // Constraint on total pt
-            // TODO: Study as to what constraints must apply for pions that have come from a rho.
-            //  Any place in phase space which would accentuate Fj(2220)?
             double pt_sum = 0;
             for (auto & part : parts) {
                 pt_sum += part->pt;
