@@ -39,7 +39,7 @@ void Event::add_proton(double Thx, double Thy, double px, double py)
     protons.push_back(proton);
 }
 
-void Event::add_proton(double Thx, double Thy, double px, double py,
+void Event::add_proton(double Thx, double Thy, double old_px, double old_py,
                        double pr_px,
                        double pr_py,
                        double pr_pz,
@@ -52,7 +52,7 @@ void Event::add_proton(double Thx, double Thy, double px, double py,
                        double pr_posx_sigma,
                        double pr_posy_sigma)
 {
-    auto* proton = new Proton(Thx, Thy, px, py, pr_px, pr_py, pr_pz, pr_ptx, pr_pty, pr_ptx_sigma, pr_pty_sigma, pr_posx, pr_posy, pr_posx_sigma, pr_posy_sigma);
+    auto* proton = new Proton(Thx, Thy, old_px, old_py, pr_px, pr_py, pr_pz, pr_ptx, pr_pty, pr_ptx_sigma, pr_pty_sigma, pr_posx, pr_posy, pr_posx_sigma, pr_posy_sigma);
     protons.push_back(proton);
 }
 

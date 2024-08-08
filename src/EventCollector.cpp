@@ -98,8 +98,8 @@ void EventCollector::initialize_events(bool isNew) {
                        *pr_px_b, *pr_py_b, *pr_pz_b, *pr_ptx_b, *pr_pty_b, *pr_ptx_sigma_b, *pr_pty_sigma_b, *pr_posx_b, *pr_posy_b, *pr_posx_sigma_b, *pr_posy_sigma_b);
         ev->add_proton(*ThxL, *ThyL, *PtxL, *PtyL,
                        *pr_px_a, *pr_py_a, *pr_pz_a, *pr_ptx_a, *pr_pty_a, *pr_ptx_sigma_a, *pr_pty_sigma_a, *pr_posx_a, *pr_posy_a, *pr_posx_sigma_a, *pr_posy_sigma_a);
-//    ev->add_proton(*ThxR, *ThyR);
-//   ev->add_proton(*ThxL, *ThyL);
+    //ev->add_proton(*ThxR, *ThyR);
+   //ev->add_proton(*ThxL, *ThyL);
     }
 }
 

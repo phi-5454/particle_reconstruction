@@ -10,8 +10,8 @@ public:
     const double p = 6500; // Momentum of the photon. We assume the change is basically nonexistant and stays the same after the collition
     double Thx; // Scattering angle on the xz-plane
     double Thy; // Scattering angle on the yz-plane
-    double px; // X component of momentum
-    double py; // Y component of momentum
+    double old_px; // X component of momentum
+    double old_py; // Y component of momentum
 
     double pr_px;
     double pr_py;
@@ -34,18 +34,18 @@ public:
      * @param Thy ThyL/R
      */
     Proton(double Thx, double Thy, double px, double py);
-    Proton(double Thx, double Thy, double px, double py,
-                       double pr_px,
-                       double pr_py,
-                       double pr_pz,
-                       double pr_ptx,
-                       double pr_pty,
-                       double pr_ptx_sigma,
-                       double pr_pty_sigma,
-                       double pr_posx,
-                       double pr_posy,
-                       double pr_posx_sigma,
-                       double pr_posy_sigma
+    Proton(double Thx, double Thy, double old_px, double old_py,
+           double pr_px,
+           double pr_py,
+           double pr_pz,
+           double pr_ptx,
+           double pr_pty,
+           double pr_ptx_sigma,
+           double pr_pty_sigma,
+           double pr_posx,
+           double pr_posy,
+           double pr_posx_sigma,
+           double pr_posy_sigma
             );
 
 private:
