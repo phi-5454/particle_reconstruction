@@ -22,10 +22,10 @@ const float PHI_WIDTH = 0.034;
  * @param evc EventCollector
  * @param part Particle type (pion or kaon)
  */
-void initialize_particles(EventCollector& evc, std::string part) {
+void initialize_particles(EventCollector& evc, std::string part, bool isNew, bool new_protons) {
     std::cout << "Initializing events." << std::endl;
 
-    evc.initialize_events(true);
+    evc.initialize_events(isNew, new_protons);
 
     if (part == "pion") evc.init_masses_and_energy(0.13957039);
     else evc.init_masses_and_energy(0.493667);
@@ -894,7 +894,7 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
             }
             return values;
         },
-        100, 1, 3, "Mass of the recreated particle",
+        100, 1.0, 3, "Mass of the recreated particle",
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -1138,10 +1138,11 @@ int main()
                 //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM*.root?#tree"
                //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
             "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
+            //"/home/younes/totemdata/mc/MinBias.root?#tree"
             ,"particle_reconstruction_results.root"
                );
 
-    initialize_particles(evc, part_type);
+    initialize_particles(evc, part_type, true, true);
     filter(evc);
     //analyze_data(evc, "histogram1");
     reconstruct(evc);

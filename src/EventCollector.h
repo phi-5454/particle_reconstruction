@@ -32,7 +32,7 @@ public:
      *
      * @param isNew Whether the used data is new or old
      */
-    void initialize_events(bool isNew);
+    void initialize_events(bool isNew, bool new_protons);
 
     /**
      * @brief Finds and returns the lowest and highest values of given lambda
@@ -352,5 +352,7 @@ public:
      *
      */
     void reconstruct_particles();
+
+
 };
 #endif

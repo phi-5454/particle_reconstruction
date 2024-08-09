@@ -14,7 +14,7 @@ EventCollector::EventCollector(std::string in, std::string out) {
     this->results = out;
 }
 
-void EventCollector::initialize_events(bool isNew) {
+void EventCollector::initialize_events(bool isNew, bool new_protons) {
     TChain *chain_part = new TChain("tree_part");
     //TChain *chain_prot = new TChain("tree_prot");
 
@@ -39,44 +39,80 @@ void EventCollector::initialize_events(bool isNew) {
     TTreeReaderValue<float> ThyR(myReader, "ThyR");
     TTreeReaderValue<float> ThyL(myReader, "ThyL");
 
+    /*
     TTreeReaderValue<double> PtxR(myReader, "pr_ptx_a");
     TTreeReaderValue<double> PtxL(myReader, "pr_ptx_b");
     TTreeReaderValue<double> PtyR(myReader, "pr_pty_a");
     TTreeReaderValue<double> PtyL(myReader, "pr_pty_b");
+     */
 
-    TTreeReaderValue<float> xPV(myReader, "xPV");
-    TTreeReaderValue<float> yPV(myReader, "yPV");
-    TTreeReaderArray<float> dxyErr(myReader, "trk_dxyerr");
-    TTreeReaderArray<float> dzErr(myReader, "trk_dzerr");
-    TTreeReaderArray<float> ptErr(myReader, "trk_pterr");
+    TTreeReaderValue<float> *xPV{nullptr};
+    TTreeReaderValue<float> *yPV{nullptr};
+    TTreeReaderArray<float> *dxyErr{nullptr};
+    TTreeReaderArray<float> *dzErr{nullptr};
+    TTreeReaderArray<float> *ptErr{nullptr};
 
-    TTreeReaderValue<double> pr_px_a(myReader, "pr_px_a");
-    TTreeReaderValue<double> pr_px_b(myReader, "pr_px_b");
-    TTreeReaderValue<double> pr_py_a(myReader, "pr_py_a");
-    TTreeReaderValue<double> pr_py_b(myReader, "pr_py_b");
-    TTreeReaderValue<double> pr_pz_a(myReader, "pr_pz_a");
-    TTreeReaderValue<double> pr_pz_b(myReader, "pr_pz_b");
-    TTreeReaderValue<double> pr_ptx_a(myReader, "pr_ptx_a");
-    TTreeReaderValue<double> pr_ptx_b(myReader, "pr_ptx_b");
-    TTreeReaderValue<double> pr_pty_a(myReader, "pr_pty_a");
-    TTreeReaderValue<double> pr_pty_b(myReader, "pr_pty_b");
-    TTreeReaderValue<double> pr_ptx_sigma_a(myReader, "pr_ptx_sigma_a");
-    TTreeReaderValue<double> pr_ptx_sigma_b(myReader, "pr_ptx_sigma_b");
-    TTreeReaderValue<double> pr_pty_sigma_a(myReader, "pr_pty_sigma_a");
-    TTreeReaderValue<double> pr_pty_sigma_b(myReader, "pr_pty_sigma_b");
-    TTreeReaderValue<double> pr_posx_a(myReader, "pr_posx_a");
-    TTreeReaderValue<double> pr_posx_b(myReader, "pr_posx_b");
-    TTreeReaderValue<double> pr_posy_a(myReader, "pr_posy_a");
-    TTreeReaderValue<double> pr_posy_b(myReader, "pr_posy_b");
-    TTreeReaderValue<double> pr_posx_sigma_a(myReader, "pr_posx_sigma_a");
-    TTreeReaderValue<double> pr_posx_sigma_b(myReader, "pr_posx_sigma_b");
-    TTreeReaderValue<double> pr_posy_sigma_a(myReader, "pr_posy_sigma_a");
-    TTreeReaderValue<double> pr_posy_sigma_b(myReader, "pr_posy_sigma_b");
+    if(isNew){
+        xPV   = new TTreeReaderValue<float>{myReader, "xPV"};
+        yPV   = new TTreeReaderValue<float>{myReader, "yPV"};
+        dxyErr= new TTreeReaderArray<float>{myReader, "trk_dxyerr"};
+        dzErr = new TTreeReaderArray<float>{myReader, "trk_dzerr"};
+        ptErr = new TTreeReaderArray<float>{myReader, "trk_pterr"};
+    }
+
+
+    TTreeReaderValue<double> *pr_px_a{nullptr};
+    TTreeReaderValue<double> *pr_px_b{nullptr};
+    TTreeReaderValue<double> *pr_py_a{nullptr};
+    TTreeReaderValue<double> *pr_py_b{nullptr};
+    TTreeReaderValue<double> *pr_pz_a{nullptr};
+    TTreeReaderValue<double> *pr_pz_b{nullptr};
+    TTreeReaderValue<double> *pr_ptx_a{nullptr};
+    TTreeReaderValue<double> *pr_ptx_b{nullptr};
+    TTreeReaderValue<double> *pr_pty_a{nullptr};
+    TTreeReaderValue<double> *pr_pty_b{nullptr};
+    TTreeReaderValue<double> *pr_ptx_sigma_a{nullptr};
+    TTreeReaderValue<double> *pr_ptx_sigma_b{nullptr};
+    TTreeReaderValue<double> *pr_pty_sigma_a{nullptr};
+    TTreeReaderValue<double> *pr_pty_sigma_b{nullptr};
+    TTreeReaderValue<double> *pr_posx_a{nullptr};
+    TTreeReaderValue<double> *pr_posx_b{nullptr};
+    TTreeReaderValue<double> *pr_posy_a{nullptr};
+    TTreeReaderValue<double> *pr_posy_b{nullptr};
+    TTreeReaderValue<double> *pr_posx_sigma_a{nullptr};
+    TTreeReaderValue<double> *pr_posx_sigma_b{nullptr};
+    TTreeReaderValue<double> *pr_posy_sigma_a{nullptr};
+    TTreeReaderValue<double> *pr_posy_sigma_b{nullptr};
+
+    if(new_protons){
+        pr_px_a = new TTreeReaderValue<double>(myReader, "pr_px_a");
+        pr_px_b=new TTreeReaderValue<double>(myReader, "pr_px_b");
+        pr_py_a=new TTreeReaderValue<double>(myReader, "pr_py_a");
+        pr_py_b=new TTreeReaderValue<double>(myReader, "pr_py_b");
+        pr_pz_a=new TTreeReaderValue<double>(myReader, "pr_pz_a");
+        pr_pz_b=new TTreeReaderValue<double>(myReader, "pr_pz_b");
+        pr_ptx_a=new TTreeReaderValue<double>(myReader, "pr_ptx_a");
+        pr_ptx_b=new TTreeReaderValue<double>(myReader, "pr_ptx_b");
+        pr_pty_a=new TTreeReaderValue<double>(myReader, "pr_pty_a");
+        pr_pty_b=new TTreeReaderValue<double>(myReader, "pr_pty_b");
+        pr_ptx_sigma_a=new TTreeReaderValue<double>(myReader, "pr_ptx_sigma_a");
+        pr_ptx_sigma_b=new TTreeReaderValue<double>(myReader, "pr_ptx_sigma_b");
+        pr_pty_sigma_a=new TTreeReaderValue<double>(myReader, "pr_pty_sigma_a");
+        pr_pty_sigma_b=new TTreeReaderValue<double>(myReader, "pr_pty_sigma_b");
+        pr_posx_a=new TTreeReaderValue<double>(myReader, "pr_posx_a");
+        pr_posx_b=new TTreeReaderValue<double>(myReader, "pr_posx_b");
+        pr_posy_a=new TTreeReaderValue<double>(myReader, "pr_posy_a");
+        pr_posy_b=new TTreeReaderValue<double>(myReader, "pr_posy_b");
+        pr_posx_sigma_a=new TTreeReaderValue<double>(myReader, "pr_posx_sigma_a");
+        pr_posx_sigma_b=new TTreeReaderValue<double>(myReader, "pr_posx_sigma_b");
+        pr_posy_sigma_a=new TTreeReaderValue<double>(myReader, "pr_posy_sigma_a");
+        pr_posy_sigma_b=new TTreeReaderValue<double>(myReader, "pr_posy_sigma_b");
+    }
 
     while (myReader.Next()) {
         Event *ev;
         if (isNew) {
-            ev = new Event(*ntrk, *zPV, *xPV, *yPV, *eventN);
+            ev = new Event(*ntrk, *zPV, **xPV, **yPV, *eventN);
         }
         else {
             ev = new Event(*ntrk, *zPV, *eventN);
@@ -86,7 +122,7 @@ void EventCollector::initialize_events(bool isNew) {
         ev->particles[0].push_back(std::vector<Particle *>{});
         if (isNew) {
             for (int i = 0; i < *ntrk; ++i) {
-                ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], ptErr[i], dxyErr[i], dzErr[i], 0, 0);
+                ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], (*ptErr)[i], (*dxyErr)[i], (*dzErr)[i], 0, 0);
             }
         }
         else {
@@ -94,12 +130,19 @@ void EventCollector::initialize_events(bool isNew) {
                 ev->add_particle(p[i], pt[i], eta[i], phi[i], q[i], dxy[i], dz[i], 0, 0, 0, 0, 0);
             }
         }
-        ev->add_proton(*ThxR, *ThyR, *PtxR, *PtyR,
-                       *pr_px_b, *pr_py_b, *pr_pz_b, *pr_ptx_b, *pr_pty_b, *pr_ptx_sigma_b, *pr_pty_sigma_b, *pr_posx_b, *pr_posy_b, *pr_posx_sigma_b, *pr_posy_sigma_b);
-        ev->add_proton(*ThxL, *ThyL, *PtxL, *PtyL,
-                       *pr_px_a, *pr_py_a, *pr_pz_a, *pr_ptx_a, *pr_pty_a, *pr_ptx_sigma_a, *pr_pty_sigma_a, *pr_posx_a, *pr_posy_a, *pr_posx_sigma_a, *pr_posy_sigma_a);
-    //ev->add_proton(*ThxR, *ThyR);
-   //ev->add_proton(*ThxL, *ThyL);
+        if(new_protons) {
+            // TODO: remove old_px and old_py from constructor
+            ev->add_proton(*ThxR, *ThyR, 0.0, 0.0,
+                           **pr_px_b, **pr_py_b, **pr_pz_b, **pr_ptx_b, **pr_pty_b, **pr_ptx_sigma_b, **pr_pty_sigma_b,
+                           **pr_posx_b, **pr_posy_b, **pr_posx_sigma_b, **pr_posy_sigma_b);
+            ev->add_proton(*ThxL, *ThyL, 0, 0,
+                           **pr_px_a, **pr_py_a, **pr_pz_a, **pr_ptx_a, **pr_pty_a, **pr_ptx_sigma_a, **pr_pty_sigma_a,
+                           **pr_posx_a, **pr_posy_a, **pr_posx_sigma_a, **pr_posy_sigma_a);
+        }
+        else{
+            ev->add_proton(*ThxR, *ThyR);
+            ev->add_proton(*ThxL, *ThyL);
+        }
     }
 }
 
