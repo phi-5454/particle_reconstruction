@@ -9,7 +9,7 @@
 #include "EventCollector.h"
 #include "TApplication.h"
 
-const float RHO_MASS = 0.760;
+const float RHO_MASS = 0.750;
 //const float RHO_WIDTH = 0.236;
 //const float RHO_MASS = 0.770;
 const float RHO_WIDTH = 0.070;
@@ -75,10 +75,12 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
  */
 void filter(EventCollector& evc) {
     std::cout << "Filtering events." << std::endl;
+    std::cout << "Current events: " << evc.events.size() << std::endl;
 
     // Non-two-track events
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
+    std::cout << "After non-two-tracks: " << evc.events.size() << std::endl;
 
     // No loopers
     evc.filter_events(
@@ -94,6 +96,7 @@ void filter(EventCollector& evc) {
             return true;
         }
     );
+    std::cout << "After loopers: " << evc.events.size() << std::endl;
 
     // Primary vertex XY position
     evc.filter_events_distribution(
@@ -102,6 +105,7 @@ void filter(EventCollector& evc) {
             return values;
         },
         "gaus", 3);
+    std::cout << "After XYPV: " << evc.events.size() << std::endl;
 
     // Primary vertex Z position
     evc.filter_events_distribution(
@@ -110,23 +114,10 @@ void filter(EventCollector& evc) {
             return values;
         },
         "gaus", 3);
-
-    // Particle smallest distance from the primary vertex in xy-plane
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dxy) < 0.0435328; // Two sigmas
-        }
-    );
-
-    // Particle smallest distance from the primary vertex in z-axis
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dz) < 0.03 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
-        }
-    );
-
+    std::cout << "After ZPV: " << evc.events.size() << std::endl;
+/*
     // No elastic protons
-    /*
+    
     evc.filter_events([](Event * event) {
         double px = 0;
         double py = 0;
@@ -136,10 +127,8 @@ void filter(EventCollector& evc) {
             py += prot->old_py;
         }
         return sqrt(px*px / 0.0176815 + py*py / 0.003880805) > 1; // Axle length is half a sigma
-    });
-     */
-
-
+    });*/
+     
     // Proton-track momentum matching
     evc.filter_events([](Event * event) {
         double trk_px = 0;
@@ -151,7 +140,7 @@ void filter(EventCollector& evc) {
             pr_px += prot->pr_px;
             pr_py += prot->pr_py;
         }
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < event->particles[0][0].size(); ++i) {
             Particle *part = event->get_particle(0,0,i);
             trk_px += part->px;
             trk_py += part->py;
@@ -164,6 +153,7 @@ void filter(EventCollector& evc) {
         bool b = -threshold_y < sumy && sumy < threshold_y;
         return a && b;
     });
+    std::cout << "After momentum matcing: " << evc.events.size() << std::endl;
 
     /*
 // Proton vertex x position
@@ -175,8 +165,23 @@ void filter(EventCollector& evc) {
     });
      */
 
+    // Particle smallest distance from the primary vertex in xy-plane
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dxy) < 0.0870656; // Three sigmas
+        }
+    );
+
+    // Particle smallest distance from the primary vertex in z-axis
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dz) < 0.08 + abs(0.015*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
+        }
+    );
+
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
+    std::cout << "After four-track + dxy + dz: " << evc.events.size() << std::endl;
 
     // Net zero charge events
     evc.filter_events([](Event *event) {
@@ -186,6 +191,7 @@ void filter(EventCollector& evc) {
         }
         return j == 0;
     });
+    std::cout << "After zero charge: " << evc.events.size() << std::endl;
 
     std::cout << "Finished filtering events." << std::endl;
 }
@@ -742,7 +748,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     c22->Draw();
 
     // Mass distribution of second particle if first is assumed rho/phi
-    TH1* h22 = evc.create_1Dhistogram(
+    TH1* h22 = h21->ProjectionX("px", 48, 62);
+    h22->Draw("E");
+    /*evc.create_1Dhistogram(
         [](Event* event) {
             std::vector<std::vector<Particle*>> parts = event->particles[1];
             std::vector<double> values(parts.size());
@@ -756,7 +764,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             }
             return values;
         }, 120, min, max, "Mass of another particle when first is assumed rho meson", true, "Mass (GeV)", "Events");
-
+*/
     // Mass distribution of reconstructed particles
     TH1* h23 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -802,8 +810,8 @@ void filter_reco1(EventCollector& evc) {
                 mass_sum += mass;
                 //if (mass < 1.021 - 0.034 || mass > 1.021 + 0.034)
                 //if (mass > PHI_MASS - PHI_WIDTH && mass < PHI_MASS + PHI_WIDTH)
-                //if (mass < PHI_MASS - PHI_WIDTH || mass > PHI_MASS + PHI_WIDTH)
-                if (mass < RHO_MASS - RHO_WIDTH || mass > RHO_MASS + RHO_WIDTH)
+                if (mass < PHI_MASS - PHI_WIDTH || mass > PHI_MASS + PHI_WIDTH)
+                //if (mass < RHO_MASS - RHO_WIDTH || mass > RHO_MASS + RHO_WIDTH)
                 //if (mass > RHO_MASS - RHO_WIDTH && mass < RHO_MASS + RHO_WIDTH)
                 //if (mass < 0.754 - 0.062 || mass > 0.754 + 0.064)
                     return false;
@@ -833,7 +841,6 @@ void filter_reco1(EventCollector& evc) {
 void filter_reco2(EventCollector& evc) {
     evc.filter_original(
             [](std::vector<Particle*> part) {
-                if (part.size() == 0) return false;
                 //std::cerr << part[0]->mass;
                 //if(part[0]->pt > 0.200) return false;
                 //if(abs(part[0]->eta) >= 1) return false;
@@ -888,13 +895,13 @@ void analyze_reco2(EventCollector& evc, std::string filename) {
 
     TH1 *h31 = evc.create_1Dhistogram(
         [](Event *event) {
-            std::vector<double> values(4);
+            std::vector<double> values(event->particles[2].size());
             for (int i = 0; i < event->particles[2].size(); ++i) {
                 values[i] = event->get_particle(2, i, 0)->mass;
             }
             return values;
         },
-        100, 1.0, 3, "Mass of the recreated particle",
+        100, 1, 3, "Mass of the recreated particle",
         true);
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -1135,23 +1142,24 @@ int main()
     const std::string part_type = "pion";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                //"/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM*.root?#tree"
-               //,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
+//                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
+               ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
+//            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
             //"/home/younes/totemdata/mc/MinBias.root?#tree"
-            ,"particle_reconstruction_results.root"
+//            ,"particle_reconstruction_results.root"
                );
 
     initialize_particles(evc, part_type, true, true);
     filter(evc);
-    //analyze_data(evc, "histogram1");
+//    analyze_data(evc, "histogram1");
     reconstruct(evc);
-    //analyze_reco1(evc, "histogram1", part_type);
+    analyze_reco1(evc, "histogram1", part_type);
     filter_reco1(evc);
     //analyze_trackmatch(evc, "histogram1");
     //analyze_vertmatch(evc, "histogram22");
     reconstruct(evc);
-    //filter_reco2(evc);
+    filter_reco2(evc);
     analyze_reco2(evc, "histogram1");
 
     //write_to_csv("testcsv.csv", evc);
