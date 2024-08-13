@@ -73,7 +73,7 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
  * 
  * @param evc EventCollector
  */
-void filter(EventCollector& evc) {
+void filter(EventCollector& evc, bool isNew, bool new_protons) {
     std::cout << "Filtering events." << std::endl;
     std::cout << "Current events: " << evc.events.size() << std::endl;
 
@@ -82,6 +82,7 @@ void filter(EventCollector& evc) {
     //evc.filter_events([](Event *event) { return event->ntracks == 4; });
     std::cout << "After non-two-tracks: " << evc.events.size() << std::endl;
 
+    if (isNew) { 
     // No loopers
     evc.filter_events(
         [](Event *event) {
@@ -115,9 +116,9 @@ void filter(EventCollector& evc) {
         },
         "gaus", 3);
     std::cout << "After ZPV: " << evc.events.size() << std::endl;
-/*
+
     // No elastic protons
-    
+    /*
     evc.filter_events([](Event * event) {
         double px = 0;
         double py = 0;
@@ -127,8 +128,8 @@ void filter(EventCollector& evc) {
             py += prot->old_py;
         }
         return sqrt(px*px / 0.0176815 + py*py / 0.003880805) > 1; // Axle length is half a sigma
-    });*/
-     
+    });
+     */
     // Proton-track momentum matching
     evc.filter_events([](Event * event) {
         double trk_px = 0;
@@ -178,7 +179,7 @@ void filter(EventCollector& evc) {
             return abs(part->dz) < 0.08 + abs(0.015*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
         }
     );
-
+    }
     // Four track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
     std::cout << "After four-track + dxy + dz: " << evc.events.size() << std::endl;
@@ -747,19 +748,27 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
         }, bins, min, max, bins, min, max, "Mass of recreated particles, assumed " + type + "s",
-        true, "m_p1 (GeV)", "m_p2 (GeV)");
-    
-    c21->SaveAs((filename + "_reco1A.pdf").c_str());
+        false, "m_p1 (GeV)", "m_p2 (GeV)");
 
-    TCanvas* c22 = new TCanvas("c22", "c22");
-    c22->Draw();
 
     // Mass distribution of second particle if first is assumed rho/phi
     int lowbin = bins * (partMass - partWidth - min) / (max - min);
     int highbin = bins * (partMass + partWidth - min) / (max - min);
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
+    h22->SetTitle("Mass of second particle when first is assumed rho");
     h22->Draw("E");
+    
+    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
+    f1->SetParameters(0.15, 0.77, 340);
+    //f1->SetParameters(0.01, 1.02, 100);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+    h22->Fit("CauchyFit", "", "", 0.7, 0.85);
+
+    c21->SaveAs((filename + "_reco1A.pdf").c_str());
+
+    TCanvas* c22 = new TCanvas("c22", "c22");
+    c22->Draw();
 
     // Mass distribution of reconstructed particles
     TH1* h24 = evc.create_1Dhistogram(
@@ -769,19 +778,14 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of recreated particles", false, "Mass (GeV)", "Events");
-
-    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    f1->SetParameters(0.15, 0.77, 340);
-    //f1->SetParameters(0.01, 1.02, 100);
-    f1->SetParNames("Sigma", "Mean", "Scale");
+        }, 120, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
     f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    //h23->Fit("CauchyFit", "", "", 0.69, 0.85);
+    h24->Fit("CauchyFit", "", "", 0.7, 0.85);
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
@@ -1141,10 +1145,9 @@ int main()
 {
     TApplication app("app", nullptr, nullptr);
 
-    const std::string part_type = "kaon";
-    EventCollector evc(
+    const std::string part_type = "pion";
+    EventCollector evc_data(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-//                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/*.root?#tree"
                 "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
 //            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
@@ -1152,19 +1155,29 @@ int main()
 //            ,"particle_reconstruction_results.root"
                );
 
-    initialize_particles(evc, part_type, true, true);
-    filter(evc);
-//    analyze_data(evc, "histogram1");
-    reconstruct(evc);
-    analyze_reco1(evc, "histogram1", part_type);
-    filter_reco1(evc, part_type);
-    //analyze_trackmatch(evc, "histogram1");
-    //analyze_vertmatch(evc, "histogram22");
-    reconstruct(evc);
-    //filter_reco2(evc);
-    analyze_reco2(evc, "histogram1");
+    EventCollector evc_mc(
+        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/rho.root?#tree"
+        ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_mc.root"
+    );
 
-    //write_to_csv("testcsv.csv", evc);
+    initialize_particles(evc_data, part_type, true, true);
+    initialize_particles(evc_mc, part_type, false, false);
+    filter(evc_data, true, true);
+    filter(evc_mc, false, false);
+    //analyze_data(evc_data, "histogram1");
+    reconstruct(evc_data);
+    reconstruct(evc_mc);
+    //analyze_both(evc_data, evc_mc, "histogram1", part_type);
+    //analyze_reco1(evc_data, "histogram1", part_type);
+    //analyze_reco1(evc_mc, "histogram2", part_type);
+    //filter_reco1(evc_data, part_type);
+    //analyze_trackmatch(evc_data, "histogram1");
+    //analyze_vertmatch(evc_data, "histogram22");
+    //reconstruct(evc_data);
+    //filter_reco2(evc_data);
+    //analyze_reco2(evc_data, "histogram1");
+
+    //write_to_csv("testcsv.csv", evc_data);
 
     app.Run();
 
