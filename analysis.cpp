@@ -45,6 +45,20 @@ Double_t CauchyDist(Double_t *x, Double_t *par) {
 }
 
 /**
+ * @brief Relativistic p-wave Cauchy or Breit-Wigner distribution function
+ * 
+ * @param x X
+ * @param par Parameters: Width, location and scale 
+ * @return Double_t Value of the function with given parameters
+ */
+Double_t CauchyRelaDist(Double_t *x, Double_t *par) {
+    Double_t q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
+    Double_t q0 = sqrt(pow(par[1], 2) / 4 - pow(0.13957039, 2));
+    Double_t sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[2] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
+}
+
+/**
  * @brief Landau distribution function
  * 
  * @param x X
@@ -68,6 +82,13 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
     return CauchyDist(x, p1) + LandauDist(x, p2) + par[6];
 }
 
+/**
+ * @brief The coefficient of the term f_i(m) in the Söding model
+ * 
+ * @param x X
+ * @param par Parameters: MC width and MC location 
+ * @return Double_t Value of the coefficient with given parameters
+ */
 Double_t SodingFit(Double_t *x, Double_t *par) {
     Double_t q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
     Double_t q0 = sqrt(pow(0.775, 2) / 4 - pow(0.13957039, 2));
@@ -75,8 +96,15 @@ Double_t SodingFit(Double_t *x, Double_t *par) {
     return par[3] * (pow(0.775, 2) - pow(x[0], 2)) / (x[0] * sigma);
 }
 
-Double_t CauchySodingFit(Double_t *x, Double_t *par) {
-    return CauchyDist(x, par) * (1 - SodingFit(x, par));
+/**
+ * @brief C
+ * 
+ * @param x 
+ * @param par 
+ * @return Double_t 
+ */
+Double_t CauchyRelaSodingFit(Double_t *x, Double_t *par) {
+    return CauchyRelaDist(x, par) * (1 - SodingFit(x, par));
 }
 
 /**
@@ -826,12 +854,25 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
     h22->SetTitle("Mass of second particle when first is assumed rho");
     h22->Draw("E");
+        
+    TF1* f3 = new TF1("CauchySodingFit", CauchyRelaSodingFit, -15, 15, 4);
+    f3->SetParNames("Sigma", "Mean", "Scale", "Const");
+    f3->FixParameter(0, 0.182264);
+    f3->FixParameter(1, 0.77521);
+    f3->SetParameter("Scale", 1000);
+    f3->SetParameter("Const", 0.3);
+    f3->SetLineColor(kAzure);
+
+    h22->Fit("CauchySodingFit", "+", "", 0.7, 0.8); // C = -0.316786
+    // https://www.actaphys.uj.edu.pl/fulltext?series=Reg&vol=39&page=173
+    // https://www-scopus-com.ezproxy.jyu.fi/record/display.uri?eid=2-s2.0-42549136453&origin=resultslist&sort=plf-f&src=s&sid=bb6e26b0fa90a96870fcc909f8329f58&sot=b&sdt=b&s=TITLE-ABS-KEY%28Residual+Bose-einstein+correlations+and+the+S%C3%B6ding+model%29&sl=71&sessionSearchId=bb6e26b0fa90a96870fcc909f8329f58&relpos=0
+    // https://journals.aps.org/prc/pdf/10.1103/PhysRevC.99.064901
     
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
     //f1->SetParameters(0.01, 1.02, 100);
     f1->SetParNames("Sigma", "Mean", "Scale");
-    h22->Fit("CauchyFit", "", "", 0.7, 0.8);
+    //h22->Fit("CauchyFit", "", "", 0.7, 0.8);
 
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
 
@@ -847,16 +888,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
         }, 120, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
-    
-    TF1* f3 = new TF1("CauchySodingFit", CauchySodingFit, -15, 15, 4);
-    f3->SetParNames("Sigma", "Mean", "Scale", "Const");
-    f3->FixParameter(0, 0.182264);
-    f3->FixParameter(1, 0.77521);
-    f3->SetParameter("Scale", 1000);
-    f3->SetParameter("Const", 0.3);
-    f3->SetLineColor(kAzure);
-
-    h22->Fit("CauchySodingFit", "+", "", 0.7, 0.8); // C = -0.345823
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
     f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
