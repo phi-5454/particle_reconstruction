@@ -9,7 +9,7 @@
 #include "EventCollector.h"
 #include "TApplication.h"
 
-const float RHO_MASS = 0.750;
+const float RHO_MASS = 0.760;
 //const float RHO_WIDTH = 0.236;
 //const float RHO_MASS = 0.770;
 const float RHO_WIDTH = 0.070;
@@ -168,7 +168,7 @@ void filter(EventCollector& evc) {
     // Particle smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.0870656; // Three sigmas
+            return abs(part->dxy) < 0.0870656; // Four sigmas
         }
     );
 
@@ -717,11 +717,18 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
+    int bins = 120;
+
     float min = 0.9;
     float max = 1.2;
+    float partMass = PHI_MASS;
+    float partWidth = PHI_WIDTH;
+
     if (type == "pion" ) {
         min = 0.2;
         max = 1.4;
+        partMass = RHO_MASS;
+        partWidth = RHO_WIDTH;
     }
 
     TCanvas *c21 = new TCanvas("c21", "c21");
@@ -739,7 +746,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             for (int i = 0; i < event->particles[1].size(); ++i)
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
-        }, 120, min, max, 120, min, max, "Mass of recreated particles, assumed " + type + "s",
+        }, bins, min, max, bins, min, max, "Mass of recreated particles, assumed " + type + "s",
         true, "m_p1 (GeV)", "m_p2 (GeV)");
     
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
@@ -748,25 +755,14 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     c22->Draw();
 
     // Mass distribution of second particle if first is assumed rho/phi
-    TH1* h22 = h21->ProjectionX("px", 48, 62);
+    int lowbin = bins * (partMass - partWidth - min) / (max - min);
+    int highbin = bins * (partMass + partWidth - min) / (max - min);
+
+    TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
     h22->Draw("E");
-    /*evc.create_1Dhistogram(
-        [](Event* event) {
-            std::vector<std::vector<Particle*>> parts = event->particles[1];
-            std::vector<double> values(parts.size());
-            for (int i = 0; i < parts.size(); ++i) {
-                for (int j = 0; j < 2; ++j) {
-                    if (event->get_particle(1, i, j)->mass > RHO_MASS - RHO_WIDTH && event->get_particle(1, i, j)->mass < RHO_MASS + RHO_WIDTH) {
-                        values[i] = event->get_particle(1, i, (j+1)%2)->mass;
-                        break;
-                    }
-                }
-            }
-            return values;
-        }, 120, min, max, "Mass of another particle when first is assumed rho meson", true, "Mass (GeV)", "Events");
-*/
+
     // Mass distribution of reconstructed particles
-    TH1* h23 = evc.create_1Dhistogram(
+    TH1* h24 = evc.create_1Dhistogram(
         [](Event* event) {
             std::vector<double> values(event->particles[1].size() * 2);
             for (int i = 0; i < event->particles[1].size(); ++i)
@@ -799,10 +795,16 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
  *
  * @param evc EventCollector
  */
-void filter_reco1(EventCollector& evc) {
+void filter_reco1(EventCollector& evc, std::string part) {
     evc.filter_reconstruction(
-        [](std::vector<Particle*> parts) {
+        [&](std::vector<Particle*> parts) {
             if (parts.size() == 0) return false;
+            double partMass = PHI_MASS;
+            double partWidth = PHI_WIDTH;
+            if (part == "pion") {
+                partMass = RHO_MASS;
+                partWidth = RHO_WIDTH;
+            }
             double mass_sum = 0;
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
@@ -810,7 +812,7 @@ void filter_reco1(EventCollector& evc) {
                 mass_sum += mass;
                 //if (mass < 1.021 - 0.034 || mass > 1.021 + 0.034)
                 //if (mass > PHI_MASS - PHI_WIDTH && mass < PHI_MASS + PHI_WIDTH)
-                if (mass < PHI_MASS - PHI_WIDTH || mass > PHI_MASS + PHI_WIDTH)
+                if (mass < partMass - partWidth || mass > partMass + partWidth)
                 //if (mass < RHO_MASS - RHO_WIDTH || mass > RHO_MASS + RHO_WIDTH)
                 //if (mass > RHO_MASS - RHO_WIDTH && mass < RHO_MASS + RHO_WIDTH)
                 //if (mass < 0.754 - 0.062 || mass > 0.754 + 0.064)
@@ -1139,7 +1141,7 @@ int main()
 {
     TApplication app("app", nullptr, nullptr);
 
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
 //                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/*.root?#tree"
@@ -1155,11 +1157,11 @@ int main()
 //    analyze_data(evc, "histogram1");
     reconstruct(evc);
     analyze_reco1(evc, "histogram1", part_type);
-    filter_reco1(evc);
+    filter_reco1(evc, part_type);
     //analyze_trackmatch(evc, "histogram1");
     //analyze_vertmatch(evc, "histogram22");
     reconstruct(evc);
-    filter_reco2(evc);
+    //filter_reco2(evc);
     analyze_reco2(evc, "histogram1");
 
     //write_to_csv("testcsv.csv", evc);
