@@ -68,6 +68,17 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
     return CauchyDist(x, p1) + LandauDist(x, p2) + par[6];
 }
 
+Double_t SodingFit(Double_t *x, Double_t *par) {
+    Double_t q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
+    Double_t q0 = sqrt(pow(0.775, 2) / 4 - pow(0.13957039, 2));
+    Double_t sigma = 0.182264 * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[3] * (pow(0.775, 2) - pow(x[0], 2)) / (x[0] * sigma);
+}
+
+Double_t CauchySodingFit(Double_t *x, Double_t *par) {
+    return CauchyDist(x, par) * (1 - SodingFit(x, par));
+}
+
 /**
  * @brief Filters the events based on given criteria
  * 
@@ -707,6 +718,64 @@ void analyze_data(EventCollector& evc, std::string filename) {
     std::cout << "Finished analyzing data." << std::endl;
 }
 
+void analyze_both(EventCollector& evc1, EventCollector& evc2, std::string filename, std::string type) {
+    std::cout << "Analyzing data and Monte Carlo -simulation." << std::endl;
+    TFile *results = TFile::Open(evc1.results.c_str(), "");
+
+    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
+    f1->SetParameters(0.15, 0.77, 340);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    c1->Draw();
+
+    int bins = 120;
+
+    float min = 0.9;
+    float max = 1.2;
+    float partMass = PHI_MASS;
+    float partWidth = PHI_WIDTH;
+
+    if (type == "pion" ) {
+        min = 0.2;
+        max = 1.4;
+        partMass = RHO_MASS;
+        partWidth = RHO_WIDTH;
+    }
+
+    // Mass distribution of reconstructed particles
+    TH1* hd1 = evc1.create_1Dhistogram(
+        [](Event* event) {
+            std::vector<double> values(event->particles[1].size() * 2);
+            for (int i = 0; i < event->particles[1].size(); ++i)
+                for (int j = 0; j < 2; ++j)
+                    values[2*i+j] = event->get_particle(1, i, j)->mass;
+            return values;
+        }, bins, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
+
+    // Mass distribution of reconstructed particles
+    TH1* hmc1 = evc2.create_1Dhistogram(
+        [](Event* event) {
+            std::vector<double> values(event->particles[1].size() * 2);
+            for (int i = 0; i < event->particles[1].size(); ++i)
+                for (int j = 0; j < 2; ++j)
+                    values[2*i+j] = event->get_particle(1, i, j)->mass;
+            return values;
+        }, bins, min, max, "Mass of recreated particles", false, "Mass (GeV)", "Events");
+
+    hmc1->SetMarkerColor(kRed);
+    hmc1->SetFillColor(kRed);
+    hmc1->SetLineColor(kRed);
+
+    double scale = hd1->GetMaximum() / hmc1->GetMaximum();;
+
+    hmc1->Scale(scale);
+    hmc1->Draw("E SAME");
+    //hmc1->Fit("CauchyFit", "", "", 0.65, 0.85);
+
+    c1->SaveAs((filename + "_MC1.pdf").c_str());
+}
+
 /**
  * @brief Analyzes the first reconstruction data
  * 
@@ -748,8 +817,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
         }, bins, min, max, bins, min, max, "Mass of recreated particles, assumed " + type + "s",
-        false, "m_p1 (GeV)", "m_p2 (GeV)");
-
+        true, "m_p1 (GeV)", "m_p2 (GeV)");
 
     // Mass distribution of second particle if first is assumed rho/phi
     int lowbin = bins * (partMass - partWidth - min) / (max - min);
@@ -763,7 +831,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     f1->SetParameters(0.15, 0.77, 340);
     //f1->SetParameters(0.01, 1.02, 100);
     f1->SetParNames("Sigma", "Mean", "Scale");
-    h22->Fit("CauchyFit", "", "", 0.7, 0.85);
+    h22->Fit("CauchyFit", "", "", 0.7, 0.8);
 
     c21->SaveAs((filename + "_reco1A.pdf").c_str());
 
@@ -779,13 +847,23 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
         }, 120, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
+    
+    TF1* f3 = new TF1("CauchySodingFit", CauchySodingFit, -15, 15, 4);
+    f3->SetParNames("Sigma", "Mean", "Scale", "Const");
+    f3->FixParameter(0, 0.182264);
+    f3->FixParameter(1, 0.77521);
+    f3->SetParameter("Scale", 1000);
+    f3->SetParameter("Const", 0.3);
+    f3->SetLineColor(kAzure);
+
+    h22->Fit("CauchySodingFit", "+", "", 0.7, 0.8); // C = -0.345823
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
     f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
-    h24->Fit("CauchyFit", "", "", 0.7, 0.85);
+    //h24->Fit("CauchyFit", "", "", 0.7, 0.85);
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
@@ -1161,14 +1239,14 @@ int main()
     );
 
     initialize_particles(evc_data, part_type, true, true);
-    initialize_particles(evc_mc, part_type, false, false);
+    //initialize_particles(evc_mc, part_type, false, false);
     filter(evc_data, true, true);
-    filter(evc_mc, false, false);
+    //filter(evc_mc, false, false);
     //analyze_data(evc_data, "histogram1");
     reconstruct(evc_data);
-    reconstruct(evc_mc);
+    //reconstruct(evc_mc);
     //analyze_both(evc_data, evc_mc, "histogram1", part_type);
-    //analyze_reco1(evc_data, "histogram1", part_type);
+    analyze_reco1(evc_data, "histogram1", part_type);
     //analyze_reco1(evc_mc, "histogram2", part_type);
     //filter_reco1(evc_data, part_type);
     //analyze_trackmatch(evc_data, "histogram1");
