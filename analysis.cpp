@@ -779,7 +779,7 @@ void analyze_both(EventCollector& evc1, EventCollector& evc2, std::string filena
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, bins, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
+        }, bins, min, max, "Mass of recreated particles, assumed " + type + "s", true, "Mass (GeV)", "Events");
 
     // Mass distribution of reconstructed particles
     TH1* hmc1 = evc2.create_1Dhistogram(
@@ -789,7 +789,7 @@ void analyze_both(EventCollector& evc1, EventCollector& evc2, std::string filena
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, bins, min, max, "Mass of recreated particles", false, "Mass (GeV)", "Events");
+        }, bins, min, max, "Mass of recreated particles, assumed " + type + "s", false, "Mass (GeV)", "Events");
 
     hmc1->SetMarkerColor(kRed);
     hmc1->SetFillColor(kRed);
@@ -845,7 +845,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 values[i] = event->get_particle(1, i, 1)->mass;
             return values;
         }, bins, min, max, bins, min, max, "Mass of recreated particles, assumed " + type + "s",
-        true, "m_p1 (GeV)", "m_p2 (GeV)");
+        false, "m_p1 (GeV)", "m_p2 (GeV)");
 
     // Mass distribution of second particle if first is assumed rho/phi
     int lowbin = bins * (partMass - partWidth - min) / (max - min);
@@ -853,20 +853,20 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
     h22->SetTitle("Mass of second particle when first is assumed rho");
-    h22->Draw("E");
-        
-    TF1* f3 = new TF1("CauchySodingFit", CauchyRelaSodingFit, -15, 15, 4);
-    f3->SetParNames("Sigma", "Mean", "Scale", "Const");
-    f3->FixParameter(0, 0.182264);
-    f3->FixParameter(1, 0.77521);
-    f3->SetParameter("Scale", 1000);
-    f3->SetParameter("Const", 0.3);
-    f3->SetLineColor(kAzure);
+    //h22->Draw("E");
 
-    h22->Fit("CauchySodingFit", "+", "", 0.7, 0.8); // C = -0.316786
-    // https://www.actaphys.uj.edu.pl/fulltext?series=Reg&vol=39&page=173
-    // https://www-scopus-com.ezproxy.jyu.fi/record/display.uri?eid=2-s2.0-42549136453&origin=resultslist&sort=plf-f&src=s&sid=bb6e26b0fa90a96870fcc909f8329f58&sot=b&sdt=b&s=TITLE-ABS-KEY%28Residual+Bose-einstein+correlations+and+the+S%C3%B6ding+model%29&sl=71&sessionSearchId=bb6e26b0fa90a96870fcc909f8329f58&relpos=0
-    // https://journals.aps.org/prc/pdf/10.1103/PhysRevC.99.064901
+    //Azimuthal angle between rhos
+    TH1* h25 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(event->particles[1].size());
+            for (int i = 0; i < event->particles[1].size(); ++i) {
+                double ang1 = abs(event->get_particle(1, i, 0)->phi - event->get_particle(1, i, 1)->phi);
+                double ang2 = abs(event->get_particle(1, i, 0)->theta - event->get_particle(1, i, 1)->theta);
+                values[i] = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
+                if (values[i] > TMath::PiOver2()) values[i] = TMath::Pi() - values[i];
+            }
+            return values;
+        }, 160, 0, 1.6, "Angle between two particles", true);
     
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
@@ -894,6 +894,15 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
     f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
 
+    TF1* f3 = new TF1("CauchySodingFit", CauchyRelaSodingFit, -15, 15, 4);
+    f3->SetParNames("Sigma", "Mean", "Scale", "Const");
+    f3->FixParameter(0, 0.180);
+    f3->FixParameter(1, 0.7551);
+    f3->SetParameter("Scale", 1000);
+    f3->SetParameter("Const", 0.3);
+    f3->SetLineColor(kAzure);
+    
+    //h24->Fit("CauchySodingFit", "+", "", 0.72, 0.82); // C = -0.316786
     //h24->Fit("CauchyFit", "", "", 0.7, 0.85);
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
@@ -940,9 +949,19 @@ void filter_reco1(EventCollector& evc, std::string part) {
             }
 
             // From the 2015 paper
-             if(pt_sum > 0.800) return false;
+             //if(pt_sum > 0.800) return false;
 
             return true;
+        }
+    );
+
+    evc.filter_reconstruction(
+        [](std::vector<Particle*> parts) {
+            double ang1 = abs(parts[0]->phi - parts[1]->phi);
+            double ang2 = abs(parts[0]->theta - parts[1]->theta);
+            double angle = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
+            if (angle > TMath::PiOver2()) angle = TMath::Pi() - angle;
+            return angle > 1.3;
         }
     );
 }
@@ -1277,14 +1296,14 @@ int main()
     reconstruct(evc_data);
     //reconstruct(evc_mc);
     //analyze_both(evc_data, evc_mc, "histogram1", part_type);
-    analyze_reco1(evc_data, "histogram1", part_type);
+    //analyze_reco1(evc_data, "histogram1", part_type);
     //analyze_reco1(evc_mc, "histogram2", part_type);
-    //filter_reco1(evc_data, part_type);
+    filter_reco1(evc_data, part_type);
     //analyze_trackmatch(evc_data, "histogram1");
     //analyze_vertmatch(evc_data, "histogram22");
-    //reconstruct(evc_data);
+    reconstruct(evc_data);
     //filter_reco2(evc_data);
-    //analyze_reco2(evc_data, "histogram1");
+    analyze_reco2(evc_data, "histogram1");
 
     //write_to_csv("testcsv.csv", evc_data);
 

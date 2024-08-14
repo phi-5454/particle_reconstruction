@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <vector>
+#include "TMath.h"
 #include "Particle.h"
 #include "Proton.h"
 /**
@@ -150,6 +151,12 @@ public:
         helper.resize(it - helper.begin());
         particles[1] = helper;
     }
+
+    static double CauchyRelaDist(double *x, double *par);
+
+    static double SodingFit(double *x, double *par);
+
+    static double CauchyRelaSodingFit(double *x, double *par);
 
     /**
      * @brief Filters the original, reconstructed particle based on the lambda

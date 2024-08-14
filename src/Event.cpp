@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include "TMath.h"
+#include "TF1.h"
 #include "Event.h"
 #include "Particle.h"
 #include "Proton.h"
@@ -76,8 +77,29 @@ void Event::set_masses_and_energies(double mass)
     }
 }
 
+double Event::CauchyRelaDist(double *x, double *par) {
+    double q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
+    double q0 = sqrt(pow(par[1], 2) / 4 - pow(0.13957039, 2));
+    double sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[2] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
+}
+
+double Event::SodingFit(double *x, double *par) {
+    double q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
+    double q0 = sqrt(pow(0.775, 2) / 4 - pow(0.13957039, 2));
+    double sigma = 0.182264 * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[3] * (pow(0.775, 2) - pow(x[0], 2)) / (x[0] * sigma);
+}
+
+double Event::CauchyRelaSodingFit(double *x, double *par) {
+    double p[4] = {0.182264,0.77521,1,0.316786};
+    return CauchyRelaDist(x, p) * SodingFit(x, p);
+}
+
 Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
 {
+    TF1* f3 = new TF1("CauchySodingFit", Event::CauchyRelaSodingFit, -15, 15, 4);
+
     double E = p1->E + p2->E;
     double px = p1->px + p2->px;
     double py = p1->py + p2->py;
@@ -85,6 +107,7 @@ Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
     double p = sqrt(pow(px, 2) + pow(py, 2) + pow(pz, 2));
     double pt = sqrt(pow(px, 2) + pow(py, 2));
     double mass = sqrt(pow(E, 2) - pow(p, 2));
+    //mass += f3->Eval(mass) * 0.03;
     double eta = TMath::ATanH(pz / p);
     double phi = atan(py / px);
     int q = p1->q + p2->q;
