@@ -3,6 +3,8 @@
 #include "TMath.h"
 #include "TLine.h"
 #include "TEllipse.h"
+#include "TStyle.h"
+#include "TROOT.h"
 #include <iostream>
 #include <math.h>
 #include <fstream>
@@ -275,12 +277,8 @@ void draw_limits(TH1* hist, double sigmas) {
  * @param evc EventCollector
  * @param filename Result pdf filename
  */
-void analyze_impact(EventCollector& evc, std::string filename) {
-    TCanvas *c11 = new TCanvas("c11", "c11");
-    c11->DivideSquare(4);
-    c11->Draw();
-
-    c11->cd(1);
+void analyze_impact(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
+    c1->cd(1);
     // Particle smallest distance from the primary vertex in xy-plane
     TH1* h11 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -289,11 +287,9 @@ void analyze_impact(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dxy;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, "Distance (mm)", "Events/3 um");
+        200, -0.3, 0.3, "Distance from primary vertex in xy-plane", true, drawOpt, scales[0], "Distance (mm)", "Events/3 um");
 
-    draw_limits(h11, 3);
-
-    c11->cd(2);
+    c1->cd(2);
     // Particle smallest distance from the primary vertex in z-axis
     TH1F* h12 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -302,11 +298,9 @@ void analyze_impact(EventCollector& evc, std::string filename) {
                 values[i] = event->get_particle(0, 0, i)->dz;
             return values;
         },
-        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, "Distance (mm)", "Events/3 um");
+        200, -0.3, 0.3, "Distance from primary vertex in z-axis", true, drawOpt, scales[1], "Distance (mm)", "Events/3 um");
 
-    draw_limits(h12, 3);
-
-    c11->cd(3);
+    c1->cd(3);
     // dxy standard deviation
     TH1* h13 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -317,9 +311,9 @@ void analyze_impact(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 value += pow(avg - event->get_particle(0, 0, i)->dxy, 2);
             return std::vector<double>{sqrt(value)};
-        }, 100, 0, 0.1, "Std for dxy of events", true, "Distance (mm)", "Events");
+        }, 100, 0, 0.1, "Std for dxy of events", true, drawOpt, scales[2], "Distance (mm)", "Events");
 
-    c11->cd(4);
+    c1->cd(4);
     // dz standard deviation
     TH1* h14 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -330,9 +324,9 @@ void analyze_impact(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 value += pow(avg - event->get_particle(0, 0, i)->dz, 2);
             return std::vector<double>{sqrt(value)};
-        }, 100, 0, 0.1, "Std for dz of events", true, "Distance (mm)", "Events");
+        }, 100, 0, 0.1, "Std for dz of events", true, drawOpt, scales[3], "Distance (mm)", "Events");
 
-    c11->SaveAs((filename + "_data_impact.pdf").c_str());
+    c1->SaveAs((filename + "_data_impact.pdf").c_str());
 }
 
 /**
@@ -341,12 +335,8 @@ void analyze_impact(EventCollector& evc, std::string filename) {
  * @param evc EventCollector
  * @param filename Result pdf filename
  */
-void analyze_angles(EventCollector& evc, std::string filename) {
-    TCanvas *c21 = new TCanvas("c21", "c21");
-    //c12->DivideSquare(4);
-    c21->Draw();
-
-    c21->cd(1);
+void analyze_angles(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
+    c1->cd(1);
     // Particle dxy vs. azimuthal angle
         TH2* h22 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -359,10 +349,10 @@ void analyze_angles(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true, "dxy (mm)", "Azimuthal angle (rad)");
+        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", false, "dxy (mm)", "Azimuthal angle (rad)");
     h22->SetMinimum(5);
     
-    c21->cd(2);
+    c1->cd(2);
     // Particle dz versus pseudorapidity
     TH2* h21 = evc.create_2Dhistogram(
         [](Event *event) {
@@ -375,10 +365,10 @@ void analyze_angles(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->eta;
             return values;
-        }, 100, -0.1, 0.1, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
+        }, 100, -0.1, 0.1, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", false, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
 
-    c21->cd(3);
+    c1->cd(3);
     // Particle azimuthal angle
     TH1* h23 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -386,15 +376,21 @@ void analyze_angles(EventCollector& evc, std::string filename) {
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 110, -3.3, 3.3, "Particle track azimuthal angle", true, "Azimuthal angle (rad)", "Events/20 mrad");
+        }, 110, -3.3, 3.3, "Particle track azimuthal angle", true, drawOpt, scales[2], "Azimuthal angle (rad)", "Events/20 mrad");
 
-    c21->cd(4);
+    c1->cd(4);
+
+
     // Particle pseudorapidity
-    TH1* h24 = h21->ProjectionY();
-    h24->SetTitle("Particle pseudorapidity");
-    h24->Draw("E");
+    TH1* h24 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(4);
+            for (int i = 0; i < 4; ++i)
+                values[i] = event->get_particle(0, 0, i)->eta;
+            return values;
+        }, 100, -3, 3, "Particle track pseudorapidity", true, drawOpt, scales[3], "Pseudorapidity", "Events/0.06");
 
-    c21->SaveAs((filename + "_data_angles.pdf").c_str());
+    c1->SaveAs((filename + "_data_angles.pdf").c_str());
 }
 
 void analyze_trackmatch(EventCollector& evc, std::string filename) {
@@ -630,12 +626,8 @@ void analyze_protons(EventCollector& evc, std::string filename) {
  * @param evc EventCollector
  * @param filename Result pdf filename
  */
-void analyze_filters(EventCollector& evc, std::string filename) {
-    TCanvas *c14 = new TCanvas("c14", "c14");
-    c14->DivideSquare(4);
-    c14->Draw();
-
-    c14->cd(1);
+void analyze_filters(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
+    c1->cd(1);
     // Check for loopers in an event
     TH1* h41 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -648,14 +640,20 @@ void analyze_filters(EventCollector& evc, std::string filename) {
                 }
             }
             return values;
-        }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, "Sum of total momentum (GeV)", "Events/5 MeV");
+        }, 100, 0, 0.5, "Sum of two tracks' total momentum", true, drawOpt, scales[0], "Sum of total momentum (GeV)", "Events/5 MeV");
 
     TLine* l1 = new TLine(0.05, 0, 0.05, h41->GetMaximum());
     l1->SetLineStyle(9);
     l1->SetLineColor(7);
     l1->Draw();
 
-    c14->SaveAs((filename + "_data_filters.pdf").c_str());
+    c1->cd(2);
+    TH1* h42 = evc.create_1Dhistogram(
+        [](Event *event) {
+            return std::vector<double>{event->zPV};
+        }, 100, -15, 15, "Z position of event primary vertex", true, drawOpt, scales[1], "Location of the vertex (mm)", "Events/0.3 mm");
+
+    c1->SaveAs((filename + "_data_filters.pdf").c_str());
 }
 
 /**
@@ -664,12 +662,8 @@ void analyze_filters(EventCollector& evc, std::string filename) {
  * @param evc EventCollector
  * @param filename Result pdf filename
  */
-void analyze_impact_minmax(EventCollector& evc, std::string filename) {
-    TCanvas* c15 = new TCanvas("c15", "c15");
-    c15->DivideSquare(4);
-    c15->Draw();
-
-    c15->cd(1);
+void analyze_impact_minmax(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
+    c1->cd(1);
     // Min dxy of event
     TH1* h51 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -680,9 +674,9 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dxy < min) min = dxy;
             }
             return std::vector<double>{min};
-        }, 150, 0, 0.03, "Min dxy of event", true, "Distance (mm)", "Events/0,003 mm");
+        }, 150, 0, 0.03, "Min dxy of event", true, drawOpt, scales[0], "Distance (mm)", "Events/0,003 mm");
 
-    c15->cd(2);
+    c1->cd(2);
     // Min dz of event
     TH1* h52 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -693,9 +687,9 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dz < min) min = dz;
             }
             return std::vector<double>{min};
-        }, 140, 0, 0.03, "Min dz of event", true, "Distance (mm)" ,"Events/0,005 mm");
+        }, 140, 0, 0.03, "Min dz of event", true, drawOpt, scales[1], "Distance (mm)" ,"Events/0,005 mm");
 
-    c15->cd(3);
+    c1->cd(3);
     // Max dxy of event
     TH1* h53 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -706,9 +700,9 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dxy > max) max = dxy;
             }
             return std::vector<double>{max};;
-        }, 90, 0, 0.045, "Max dxy of event", true, "Distance (mm)", "Events/0,05 mm");
+        }, 90, 0, 0.045, "Max dxy of event", true, drawOpt, scales[2], "Distance (mm)", "Events/0,05 mm");
 
-    c15->cd(4);
+    c1->cd(4);
     // Max dz of event
     TH1* h54 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -719,9 +713,9 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
                 if (dz > max) max = dz;
             }
             return std::vector<double>{max};
-        }, 100, 0, 0.06, "Max dz of events", true, "Distance (mm)", "Events/0,05 mm");
+        }, 100, 0, 0.06, "Max dz of events", true, drawOpt, scales[3], "Distance (mm)", "Events/0,05 mm");
 
-    c15->SaveAs((filename + "_data_impact_minmax.pdf").c_str());
+    c1->SaveAs((filename + "_data_impact_minmax.pdf").c_str());
 }
 
 /**
@@ -730,18 +724,21 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename) {
  * @param evc EventCollector
  * @param filename Name of the created histogram pdf file
  */
-void analyze_data(EventCollector& evc, std::string filename) {
+void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing data." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
 
-    TF1* f1 = new TF1("fit", CauchyDist, -15, 15, 3);
-    f1->SetParNames("Sigma", "Mean", "Scale");
+    std::vector<std::vector<Double_t>> scales(c.size(), std::vector<Double_t>(4, 0));
+    for (int j = 0; j < c.size(); ++j) {
+        for (int i = 1; i < 5; ++i)
+            scales[j][i-1] = c[j]->GetPad(i)->GetUymax();
+    }
 
-    analyze_impact(evc, filename);
-    analyze_impact_minmax(evc, filename);
-    analyze_angles(evc, filename);
-    analyze_protons(evc, filename);
-    analyze_filters(evc, filename);
+    analyze_impact(evc, filename, drawOpt, c[0], scales[0]);
+    analyze_impact_minmax(evc, filename, drawOpt, c[1], scales[1]);
+    analyze_angles(evc, filename, drawOpt, c[2], scales[2]);
+    analyze_filters(evc, filename, drawOpt, c[3], scales[3]);
+    //analyze_protons(evc, filename);
 
     std::cout << "Finished analyzing data." << std::endl;
 }
@@ -861,12 +858,12 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
             std::vector<double> values(event->particles[1].size());
             for (int i = 0; i < event->particles[1].size(); ++i) {
                 double ang1 = abs(event->get_particle(1, i, 0)->phi - event->get_particle(1, i, 1)->phi);
-                double ang2 = abs(event->get_particle(1, i, 0)->theta - event->get_particle(1, i, 1)->theta);
-                values[i] = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
-                if (values[i] > TMath::PiOver2()) values[i] = TMath::Pi() - values[i];
+                values[i] = abs(event->get_particle(1, i, 0)->theta - event->get_particle(1, i, 1)->theta);
+                //values[i] = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
+                //if (values[i] > TMath::PiOver2()) values[i] = TMath::Pi() - values[i];
             }
             return values;
-        }, 160, 0, 1.6, "Angle between two particles", true);
+        }, 160, -3.2, 3.2, "Angle between two particles", true);
     
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
@@ -949,7 +946,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
             }
 
             // From the 2015 paper
-             //if(pt_sum > 0.800) return false;
+             if(pt_sum > 0.800) return false;
 
             return true;
         }
@@ -961,7 +958,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
             double ang2 = abs(parts[0]->theta - parts[1]->theta);
             double angle = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
             if (angle > TMath::PiOver2()) angle = TMath::Pi() - angle;
-            return angle > 1.3;
+            return angle > 1;
         }
     );
 }
@@ -1273,7 +1270,7 @@ int main()
 {
     TApplication app("app", nullptr, nullptr);
 
-    const std::string part_type = "pion";
+    const std::string part_type = "kaon";
     EventCollector evc_data(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
                 "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
@@ -1284,26 +1281,48 @@ int main()
                );
 
     EventCollector evc_mc(
-        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/rho.root?#tree"
+        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/phi.root?#tree"
         ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_mc.root"
     );
+    TCanvas* c100 = new TCanvas("c100", "c100");
+    TCanvas* c101 = new TCanvas("c101", "c101");
+    TCanvas* c102 = new TCanvas("c102", "c102");
+    TCanvas* c103 = new TCanvas("c103", "c103");
+    c100->DivideSquare(4);
+    c101->DivideSquare(4);
+    c102->DivideSquare(4);
+    c103->DivideSquare(4);
+    std::vector<TCanvas *> c = {c100, c101, c102, c103};
+
+    TStyle* data = new TStyle("Data", "Data style");
+    data->SetHistFillColor(kBlue);
+    data->SetMarkerColor(kBlue);
+    data->SetHistLineColor(kBlue);
+
+    TStyle* MC = new TStyle("MC", "Monte Carlo style");
+    MC->SetHistFillColor(2);
+    MC->SetMarkerColor(2);
+    MC->SetHistLineColor(2);
 
     initialize_particles(evc_data, part_type, true, true);
-    //initialize_particles(evc_mc, part_type, false, false);
-    filter(evc_data, true, true);
-    //filter(evc_mc, false, false);
-    //analyze_data(evc_data, "histogram1");
-    reconstruct(evc_data);
+    initialize_particles(evc_mc, part_type, false, false);
+    filter(evc_data, false, false);
+    filter(evc_mc, false, false);
+    data->cd();
+    analyze_data(evc_data, "histogram1", "E", c);
+    MC->cd();
+    analyze_data(evc_mc, "MC", "E SAME", c);
+    //reconstruct(evc_data);
     //reconstruct(evc_mc);
     //analyze_both(evc_data, evc_mc, "histogram1", part_type);
     //analyze_reco1(evc_data, "histogram1", part_type);
     //analyze_reco1(evc_mc, "histogram2", part_type);
-    filter_reco1(evc_data, part_type);
+    //filter_reco1(evc_data, part_type);
     //analyze_trackmatch(evc_data, "histogram1");
     //analyze_vertmatch(evc_data, "histogram22");
-    reconstruct(evc_data);
+    //reconstruct(evc_data);
     //filter_reco2(evc_data);
-    analyze_reco2(evc_data, "histogram1");
+    //analyze_reco2(evc_data, "histogram1");
 
     //write_to_csv("testcsv.csv", evc_data);
 

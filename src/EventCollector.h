@@ -68,13 +68,14 @@ public:
      * @param high Upper limit of bins
      * @param title Title of the histogram
      * @param draw Whether or not to draw the histogram
+     * @param drawOptions Drawing options for the histogram
      * @param xtitle Title of the x-axis
      * @param ytitle Title of the y-axis
      * @return TH1F* Drawn histogram
      */
     template <typename F>
     TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high, std::string title, bool draw,
-                             std::string xtitle, std::string ytitle) {
+                             std::string drawOptions, double scaleFac, std::string xtitle, std::string ytitle) {
         TH1F *hist = new TH1F("hist", title.c_str(), bins, low, high);
         for (Event *&event : events) {
             std::vector<double> values = lambda(event);
@@ -83,8 +84,13 @@ public:
         }
         hist->GetXaxis()->SetTitle(xtitle.c_str());
         hist->GetYaxis()->SetTitle(ytitle.c_str());
+        if (drawOptions.find("SAME") != -1 ) {
+            double max = 1.07*hist->GetMaximum();
+            double scale = scaleFac / max;
+            hist->Scale(scale);
+        }
         if (draw)
-            hist->Draw("E");
+            hist->Draw(drawOptions.c_str());
         return hist;
     }
 
@@ -102,9 +108,47 @@ public:
      * @return TH1F*
      */
     template <typename F>
+    TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high, std::string title, bool draw,
+                             std::string drawOpt, std::string xtitle, std::string ytitle) {
+        return create_1Dhistogram(lambda, bins, low, high, title, draw, drawOpt, 0, xtitle, ytitle);
+    };
+
+    /**
+     * @brief Create a 1D histogram
+     *
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda for event. Needs to return
+     * a vector of doubles.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param draw Whether or not to draw the histogram
+     * @return TH1F*
+     */
+    template <typename F>
+    TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high, std::string title, bool draw,
+                             std::string xtitle, std::string ytitle) {
+        return create_1Dhistogram(lambda, bins, low, high, title, draw, "E", 0, xtitle, ytitle);
+    };
+
+    /**
+     * @brief Create a 1D histogram
+     *
+     * @tparam F A lambda function
+     * @param lambda Property to be fitted as a lambda for event. Needs to return
+     * a vector of doubles.
+     * @param bins Amount of bins
+     * @param low Lower limit of bins
+     * @param high Upper limit of bins
+     * @param title Title of the histogram
+     * @param draw Whether or not to draw the histogram
+     * @return TH1F*
+     */
+    template <typename F>
     TH1F *create_1Dhistogram(F &&lambda, int bins, double low, double high,
                              std::string title, bool draw) {
-        return create_1Dhistogram(lambda, bins, low, high, title, draw, "GeV", "Events");
+        return create_1Dhistogram(lambda, bins, low, high, title, draw, "E", 0, "GeV", "Events");
     };
 
     /**
@@ -119,7 +163,7 @@ public:
     template <typename F> TH1F *create_1Dhistogram(F &&lambda, bool draw) {
         auto [min, max] = find_min_max(lambda);
         return create_1Dhistogram(lambda, round(sqrt(2 * events.size())), min, max,
-                                  "A histogram for a fit", draw);
+                                  "A histogram for a fit", draw, "E", 0);
     };
 
     /**
@@ -137,7 +181,7 @@ public:
     template <typename F>
     TF1 *create_1Dhistogram_fit(F &&lambda, int bins, double low, double high,
                                 std::string title, std::string distr) {
-        TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, true);
+        TH1F *h1 = create_1Dhistogram(lambda, bins, low, high, title, false);
         h1->Fit(distr.c_str());
         return h1->GetFunction(distr.c_str());
     };
