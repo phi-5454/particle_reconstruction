@@ -1067,10 +1067,32 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             return values;
         }, 50, -5, 5, "Pseudorapidity of the recreated particle", true, drawOpt, scales[0][1], "Pseudorapidity", "Events");
     
+    c[0]->cd(3);
+    // Reconstructed particle azimuthal angle
+    TH1* h33 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(event->particles[2].size());
+            for (int i = 0; i < event->particles[2].size(); ++i) {
+                values[i] = event->get_particle(2, i, 0)->phi;
+            }
+            return values;
+        }, 64, -3.2, 3.2, "Azimuthal angle of the recreated particle", true, drawOpt, scales[0][2], "Angle (rad)", "Events");
+
+    c[0]->cd(4);
+    // Reconstructed particle transverse momentum
+    TH1* h34 = evc.create_1Dhistogram(
+        [](Event *event) {
+            std::vector<double> values(event->particles[2].size());
+            for (int i = 0; i < event->particles[2].size(); ++i) {
+                values[i] = event->get_particle(2, i, 0)->pt;
+            }
+            return values;
+        }, 100, 0, 5, "Transverse momentum of the recreated particle", true, drawOpt, scales[0][3], "Momentum (GeV)", "Events");
+
     c[0]->SaveAs((filename + "_reco2A.pdf").c_str());
 
     c[1]->cd();
-    TH2* h33 = evc.create_2Dhistogram(
+    TH2* h35 = evc.create_2Dhistogram(
         [](Event* event) {
             std::vector<double> values(event->particles[2].size());
             for (int i = 0; i < event->particles[2].size(); ++i)
@@ -1353,7 +1375,7 @@ int main()
     data->cd();
     analyze_reco2(evc_data, "histogram1", "E", c);
     MC->cd();
-    analyze_reco2(evc_mc, "MC", "E", c);
+    analyze_reco2(evc_mc, "MC", "E SAME", c);
 
     //write_to_csv("testcsv.csv", evc_data);
 
