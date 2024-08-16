@@ -746,7 +746,7 @@ void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt
 void analyze_both(EventCollector& evc1, EventCollector& evc2, std::string filename, std::string type) {
     std::cout << "Analyzing data and Monte Carlo -simulation." << std::endl;
     TFile *results = TFile::Open(evc1.results.c_str(), "");
-
+    
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
     f1->SetParNames("Sigma", "Mean", "Scale");
@@ -808,9 +808,14 @@ void analyze_both(EventCollector& evc1, EventCollector& evc2, std::string filena
  * @param filename Name of the created histogram pdf file
  * @param type Type of initial particle
  */
-void analyze_reco1(EventCollector& evc, std::string filename, std::string type) {
+void analyze_reco1(EventCollector& evc, std::string filename, std::string type, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
+
+    std::vector<Double_t> scales(c.size(), 0);
+    for (int j = 0; j < c.size(); ++j) {
+        scales[j] = c[j]->GetUymax();
+    }
 
     int bins = 120;
 
@@ -825,9 +830,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
         partMass = RHO_MASS;
         partWidth = RHO_WIDTH;
     }
-
-    TCanvas *c21 = new TCanvas("c21", "c21");
-    c21->Draw();
 
     // Mass distribution of each reconstructed particle pair
     TH2 *h21 = evc.create_2Dhistogram(
@@ -850,20 +852,29 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
     h22->SetTitle("Mass of second particle when first is assumed rho");
-    //h22->Draw("E");
 
+    if (drawOpt.find("SAME") != -1 ) {
+        double max = 1.07*h22->GetMaximum();
+        double scale = scales[0] / max;
+        h22->Scale(scale);
+    }
+
+    c[0]->cd();
+    h22->Draw(drawOpt.c_str());
+    //h22->Draw("E");
+    c[0]->SaveAs((filename + "_reco1A.pdf").c_str());
+
+    c[1]->cd();
     //Azimuthal angle between rhos
     TH1* h25 = evc.create_1Dhistogram(
         [](Event *event) {
             std::vector<double> values(event->particles[1].size());
             for (int i = 0; i < event->particles[1].size(); ++i) {
-                double ang1 = abs(event->get_particle(1, i, 0)->phi - event->get_particle(1, i, 1)->phi);
-                values[i] = abs(event->get_particle(1, i, 0)->theta - event->get_particle(1, i, 1)->theta);
-                //values[i] = 2 * TMath::ASin(sqrt(pow(sin(ang1 / 2), 2) + pow(sin(ang2 / 2), 2)) / sqrt(2));
-                //if (values[i] > TMath::PiOver2()) values[i] = TMath::Pi() - values[i];
+                values[i] = abs(event->get_particle(1, i, 0)->phi - event->get_particle(1, i, 1)->phi);
+                if (values[i] > TMath::PiOver2()) values[i] = TMath::Pi() - values[i];
             }
             return values;
-        }, 160, -3.2, 3.2, "Angle between two particles", true);
+        }, 160, 0, 1.6, "Azimuthal angle between two particles", true, drawOpt, scales[1], "Azimuthal angle (rad)", "Events/10 mrad");
     
     TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
     f1->SetParameters(0.15, 0.77, 340);
@@ -871,11 +882,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     f1->SetParNames("Sigma", "Mean", "Scale");
     //h22->Fit("CauchyFit", "", "", 0.7, 0.8);
 
-    c21->SaveAs((filename + "_reco1A.pdf").c_str());
+    c[1]->SaveAs((filename + "_reco1B.pdf").c_str());
 
-    TCanvas* c22 = new TCanvas("c22", "c22");
-    c22->Draw();
-
+    c[2]->cd();
     // Mass distribution of reconstructed particles
     TH1* h24 = evc.create_1Dhistogram(
         [](Event* event) {
@@ -884,7 +893,21 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of recreated particles", true, "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of recreated particles", true, drawOpt, scales[2], "Mass (GeV)", "Events");
+
+    c[2]->SaveAs((filename + "_reco1C.pdf").c_str());
+
+    c[3]->cd();
+    TH1* h26 = evc.create_1Dhistogram(
+        [](Event* event) {
+            std::vector<double> values(event->particles[1].size() * 2);
+            for (int i = 0; i < event->particles[1].size(); ++i)
+                for (int j = 0; j < 2; ++j)
+                    values[2*i+j] = event->get_particle(1, i, j)->pt;
+            return values;
+        }, 100, 0, 3, "Transverse momentum of recreated particles", true, drawOpt, scales[3], "Momentum (GeV)", "Events");
+
+    c[3]->SaveAs((filename + "_reco1D.pdf").c_str());
 
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
     f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
@@ -904,7 +927,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type) 
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
-    c22->SaveAs((filename + "_reco1B.pdf").c_str());
 
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
@@ -1270,10 +1292,10 @@ int main()
 {
     TApplication app("app", nullptr, nullptr);
 
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
     EventCollector evc_data(
 //             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
 //            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
             //"/home/younes/totemdata/mc/MinBias.root?#tree"
@@ -1281,7 +1303,7 @@ int main()
                );
 
     EventCollector evc_mc(
-        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/phi.root?#tree"
+        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/rho.root?#tree"
         ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_mc.root"
     );
     TCanvas* c100 = new TCanvas("c100", "c100");
@@ -1306,17 +1328,19 @@ int main()
 
     initialize_particles(evc_data, part_type, true, true);
     initialize_particles(evc_mc, part_type, false, false);
-    filter(evc_data, false, false);
+    filter(evc_data, true, true);
     filter(evc_mc, false, false);
-    data->cd();
-    analyze_data(evc_data, "histogram1", "E", c);
-    MC->cd();
-    analyze_data(evc_mc, "MC", "E SAME", c);
-    //reconstruct(evc_data);
-    //reconstruct(evc_mc);
+    //data->cd();
+    //analyze_data(evc_data, "histogram1", "E", c);
+    //MC->cd();
+    //analyze_data(evc_mc, "MC", "E SAME", c);
+    reconstruct(evc_data);
+    reconstruct(evc_mc);
     //analyze_both(evc_data, evc_mc, "histogram1", part_type);
-    //analyze_reco1(evc_data, "histogram1", part_type);
-    //analyze_reco1(evc_mc, "histogram2", part_type);
+    data->cd();
+    analyze_reco1(evc_data, "histogram1", part_type, "E", c);
+    MC->cd();
+    analyze_reco1(evc_mc, "MC", part_type, "E SAME", c);
     //filter_reco1(evc_data, part_type);
     //analyze_trackmatch(evc_data, "histogram1");
     //analyze_vertmatch(evc_data, "histogram22");
