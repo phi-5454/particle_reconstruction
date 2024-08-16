@@ -324,7 +324,7 @@ public:
                                     int bins, double low, double high,
                                     std::string title) {
         TH1 *hist = create_1Dhistogram(lambda, bins, low, high, title, false);
-        hist->Fit(func);
+        hist->Fit(func, "0");
         TF1 *fit = hist->GetFunction("fit");
         double mean = fit->GetParameter("Mean");
         double sigma = fit->GetParameter("Sigma");
