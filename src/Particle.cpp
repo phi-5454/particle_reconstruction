@@ -22,19 +22,19 @@ Particle::Particle(double p, double pt, double px, double py, double pz, double 
   this->dxyErr = dxyErr;
   this->dzErr = dzErr;
 
-  this->calculate_theta();
+  calculate_theta();
 }
 
 Particle::Particle(double p, double pt, double eta, double phi, int q, double dxy, double dz,
                    double mass, double ptErr, double dxyErr, double dzErr) : Particle(
                     p, pt, 0, 0, 0, eta, phi, q, dxy, dz, mass, 0, ptErr, dxyErr, dzErr) {
-  this->calculate_momenta();
+  calculate_momenta();
 }
 
 Particle::Particle(double p, double pt, double eta, double phi, int q, double dxy,
                    double dz, double ptErr, double dxyErr, double dzErr) : Particle(
                     p, pt, 0, 0, 0, eta, phi, q, dxy, dz, 0, 0, ptErr, dxyErr, dzErr) {
-  this->calculate_momenta();
+  calculate_momenta();
 }
 
 void Particle::calculate_momenta() {

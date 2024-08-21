@@ -12,31 +12,33 @@
 #include "TApplication.h"
 
 const float RHO_MASS = 0.760;
-//const float RHO_WIDTH = 0.236;
-//const float RHO_MASS = 0.770;
-const float RHO_WIDTH = 0.062;
+const float RHO_WIDTH = 0.070;
 const float PHI_MASS = 1.021;
 const float PHI_WIDTH = 0.034;
+const float PION_MASS = 0.13957;
+const float KAON_MASS = 0.49367;
 
 /**
- * @brief Create object for each event and fill it with particles. Also give all particles a certain mass.
+ * @brief Create an object for each event and fill it with particles. Also give all particles a certain mass.
  * 
  * @param evc EventCollector
  * @param part Particle type (pion or kaon)
+ * @param new_ntuples Whether the used ntuples are new or old / MC
+ * @param new_protons Whether the used protons are new or old
  */
-void initialize_particles(EventCollector& evc, std::string part, bool isNew, bool new_protons) {
+void initialize_particles(EventCollector& evc, std::string part, bool new_ntuples, bool new_protons) {
     std::cout << "Initializing events." << std::endl;
 
-    evc.initialize_events(isNew, new_protons);
+    evc.initialize_events(new_ntuples, new_protons);
 
-    if (part == "pion") evc.init_masses_and_energy(0.13957039);
-    else evc.init_masses_and_energy(0.493667);
+    if (part == "pion") evc.init_masses_and_energy(PION_MASS);
+    else evc.init_masses_and_energy(KAON_MASS);
 
     std::cout << "Finished initializing events." << std::endl;
 }
 
 /**
- * @brief Cauchy or Breit-Wigner distribution function
+ * @brief Cauchy or Breit-Wigner distribution function.
  * 
  * @param x X
  * @param par Parameters: Width, location and scale 
@@ -47,21 +49,21 @@ Double_t CauchyDist(Double_t *x, Double_t *par) {
 }
 
 /**
- * @brief Relativistic p-wave Cauchy or Breit-Wigner distribution function
+ * @brief Relativistic p-wave Breit-Wigner function for fitting (from https://cds.cern.ch/record/1156140). 
  * 
  * @param x X
- * @param par Parameters: Width, location and scale 
- * @return Double_t Value of the function with given parameters
+ * @param par Parameters: Half-width, location, mass of particle produced in decay (pion) and scale
+ * @return double Value of the function with given parameters
  */
-Double_t CauchyRelaDist(Double_t *x, Double_t *par) {
-    Double_t q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
-    Double_t q0 = sqrt(pow(par[1], 2) / 4 - pow(0.13957039, 2));
-    Double_t sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
-    return par[2] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
+Double_t CauchyRelaDist(double *x, double *par) {
+    double q = sqrt(pow(x[0], 2) / 4 - pow(par[2], 2));
+    double q0 = sqrt(pow(par[1], 2) / 4 - pow(par[2], 2));
+    double sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[3] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
 }
 
 /**
- * @brief Landau distribution function
+ * @brief Landau distribution function.
  * 
  * @param x X
  * @param par Parameters: Width, location and scale
@@ -72,7 +74,7 @@ Double_t LandauDist(Double_t *x, Double_t *par) {
 }
 
 /**
- * @brief Combined Cauchy and Landau distributions
+ * @brief Combined Cauchy and Landau distributions.
  * 
  * @param x X
  * @param par Parameters: Cauchy width, location and scale, Landau width, location and scale
@@ -85,92 +87,97 @@ Double_t CauchyLandauDist(Double_t *x, Double_t *par) {
 }
 
 /**
- * @brief The coefficient of the term f_i(m) in the Söding model
+ * @brief The coefficient of the term f_i(m) in the Söding model (from https://cds.cern.ch/record/1156140).
  * 
  * @param x X
- * @param par Parameters: MC width and MC location 
+ * @param par Parameters: Half-width from signal (fixed), location from signal (fixed),
+ * mass of particle produced in decay (pion) and free parameter C.
  * @return Double_t Value of the coefficient with given parameters
  */
-Double_t SodingFit(Double_t *x, Double_t *par) {
-    Double_t q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
-    Double_t q0 = sqrt(pow(0.775, 2) / 4 - pow(0.13957039, 2));
-    Double_t sigma = 0.182264 * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
-    return par[3] * (pow(0.775, 2) - pow(x[0], 2)) / (x[0] * sigma);
+Double_t SodingFit(double *x, double *par) {
+    double q = sqrt(pow(x[0], 2) / 4 - pow(par[2], 2));
+    double q0 = sqrt(pow(par[1], 2) / 4 - pow(par[2], 2));
+    double sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[3] * (pow(par[1], 2) - pow(x[0], 2)) / (x[0] * sigma);
 }
 
 /**
- * @brief C
+ * @brief Additional fit function from Söding model (from https://cds.cern.ch/record/1156140).
  * 
- * @param x 
- * @param par 
- * @return Double_t 
+ * @param x X
+ * @param par Parameters: BW half-width, location and scale, Söding half-width, location, decay mass and free parameter C
+ * @return double Value of the function with given parameters
  */
-Double_t CauchyRelaSodingFit(Double_t *x, Double_t *par) {
-    return CauchyRelaDist(x, par) * (1 - SodingFit(x, par));
+Double_t CauchyRelaSodingFit(double *x, double *par) {
+    double p1[4] = {par[0],par[1],par[5],par[2]};
+    double p2[4] = {par[3],par[4],par[5],par[6]};
+    return CauchyRelaDist(x, p1) * SodingFit(x, p2);
 }
 
 /**
- * @brief Filters the events based on given criteria
+ * @brief Filters the events based on given criteria.
  * 
  * @param evc EventCollector
  */
-void filter(EventCollector& evc, bool isNew, bool new_protons) {
+void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     std::cout << "Filtering events." << std::endl;
     std::cout << "Current events: " << evc.events.size() << std::endl;
 
-    // Non-two-track events
+    // Filter out events with two or less tracks
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
-    //evc.filter_events([](Event *event) { return event->ntracks == 4; });
-    std::cout << "After non-two-tracks: " << evc.events.size() << std::endl;
+    std::cout << "Without two-tracks: " << evc.events.size() << std::endl;
 
-    if (isNew) { 
-    // No loopers
+    if (new_ntuples) { 
+
+    // Filter out looper tracks (multiple detections for a single particle)
     evc.filter_events(
         [](Event *event) {
             for (int i = 0; i < event->ntracks - 1; ++i) {
                 Particle* part1 = event->get_particle(0, 0, i);
                 for (int j = i + 1; j < event->ntracks; ++j) {
                     Particle* part2 = event->get_particle(0, 0, j);
-                    if(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)) < 0.05)
+                    if(sqrt(pow(part1->px + part2->px, 2) + pow(part1->py + part2->py, 2) + pow(part1->pz + part2->pz, 2)) < 0.05 /*GeV*/)
                         return false;
                 }
             }
             return true;
         }
     );
-    std::cout << "After loopers: " << evc.events.size() << std::endl;
+    std::cout << "Without loopers: " << evc.events.size() << std::endl;
 
-    // Primary vertex XY position
+    // Filter our badly reconstructed tracks or long-lived particles based on primary collision vertex XY position
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
             return values;
-        },
-        "gaus", 3);
-    std::cout << "After XYPV: " << evc.events.size() << std::endl;
+        }, "gaus", 3);
+    std::cout << "After XYPV filter: " << evc.events.size() << std::endl;
 
-    // Primary vertex Z position
+    // Filter our badly reconstructed tracks based on primary vertex Z position
     evc.filter_events_distribution(
         [](Event *event) {
             std::vector<double> values = {event->zPV};
             return values;
         },
         "gaus", 3);
-    std::cout << "After ZPV: " << evc.events.size() << std::endl;
+    std::cout << "After ZPV filter: " << evc.events.size() << std::endl;
 
-    // No elastic protons
+    // Filter out elastic proton collisions
     evc.filter_events([](Event * event) {
         double px = 0;
         double py = 0;
         for (int i = 0; i < 2; ++i) {
             Proton *prot = event->get_proton(i);
-            px += prot->old_px;
-            py += prot->old_py;
+            px += prot->pr_px;
+            py += prot->pr_py;
         }
-        return sqrt(px*px / 0.0176815 + py*py / 0.003880805) > 1; // Axle length is half a sigma
+        return sqrt(px*px / 0.0176815 + py*py / 0.003880805) > 1; // An ellipse, axle length is half a sigma
     });
+
+    std::cout << "Without elastic protons: " << evc.events.size() << std::endl;
      
-    // Proton-track momentum matching
+    // Filter out badly reconstructed tracks based on proton-track momentum matching.
+    // This is currently done when creating the ntuples, this just describes the process and filter values
     evc.filter_events([](Event * event) {
         double trk_px = 0;
         double trk_py = 0;
@@ -194,10 +201,10 @@ void filter(EventCollector& evc, bool isNew, bool new_protons) {
         bool b = -threshold_y < sumy && sumy < threshold_y;
         return a && b;
     });
-    std::cout << "After momentum matcing: " << evc.events.size() << std::endl;
+    std::cout << "After momentum matcing filter: " << evc.events.size() << std::endl;
 
     /*
-// Proton vertex x position
+    // Filter badly reconstructed proton tracks based on proton vertex x position
     evc.filter_events([](Event * event) {
         const double threshold = 0.05;
         auto prtx_a = event->get_proton(0)->pr_posx;
@@ -206,25 +213,28 @@ void filter(EventCollector& evc, bool isNew, bool new_protons) {
     });
      */
 
-    // Particle smallest distance from the primary vertex in xy-plane
+    // Filter out background particles and bad tracks based on particle's 
+    // smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.0870656; // Four sigmas
+            return abs(part->dxy) < 0.0652992; // Three sigmas
         }
     );
 
-    // Particle smallest distance from the primary vertex in z-axis
+    // Filter out background particles and bad tracks based on particle's
+    // smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.08 + abs(0.015*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
+            return abs(part->dz) < 0.06 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
         }
     );
     }
-    // Four track events
+
+    // Filter out everything but four-track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
     std::cout << "After four-track + dxy + dz: " << evc.events.size() << std::endl;
 
-    // Net zero charge events
+    // Filter out everything but net zero charge events. This gives two positive and two negative particles.
     evc.filter_events([](Event *event) {
         int j = 0;
         for (int i = 0; i < event->ntracks; ++i) {
@@ -238,7 +248,7 @@ void filter(EventCollector& evc, bool isNew, bool new_protons) {
 }
 
 /**
- * @brief Reconstructs the particles from pairs
+ * @brief Reconstructs the particles.
  * 
  * @param evc EventCollector
  */
@@ -275,6 +285,9 @@ void draw_limits(TH1* hist, double sigmas) {
  * 
  * @param evc EventCollector
  * @param filename Result pdf filename
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
+ * @param scales The scales used to scale the histograms drawn on top of each other
  */
 void analyze_impact(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
     c1->cd(1);
@@ -333,6 +346,9 @@ void analyze_impact(EventCollector& evc, std::string filename, std::string drawO
  *
  * @param evc EventCollector
  * @param filename Result pdf filename
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
+ * @param scales The scales used to scale the histograms drawn on top of each other
  */
 void analyze_angles(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
     c1->cd(1);
@@ -348,7 +364,7 @@ void analyze_angles(EventCollector& evc, std::string filename, std::string drawO
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", false, "dxy (mm)", "Azimuthal angle (rad)");
+        }, 100, -0.2, 0.2, 100, -3.2, 3.2, "Particle dxy vs. azimuthal angle", true, "dxy (mm)", "Azimuthal angle (rad)");
     h22->SetMinimum(5);
     
     c1->cd(2);
@@ -364,7 +380,7 @@ void analyze_angles(EventCollector& evc, std::string filename, std::string drawO
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->eta;
             return values;
-        }, 100, -0.1, 0.1, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", false, "dz (mm)", "Pseudorapidity");
+        }, 100, -0.1, 0.1, 100, -2.8, 2.8, "Particle dz vs. pseudorapidity", true, "dz (mm)", "Pseudorapidity");
     h21->SetMinimum(5);
 
     c1->cd(3);
@@ -375,11 +391,9 @@ void analyze_angles(EventCollector& evc, std::string filename, std::string drawO
             for (int i = 0; i < 4; ++i)
                 values[i] = event->get_particle(0, 0, i)->phi;
             return values;
-        }, 110, -3.3, 3.3, "Particle track azimuthal angle", true, drawOpt, scales[2], "Azimuthal angle (rad)", "Events/20 mrad");
+        }, 110, -3.3, 3.3, "Particle track azimuthal angle", true, drawOpt, scales[2], "Azimuthal angle (rad)", "Events/60 mrad");
 
     c1->cd(4);
-
-
     // Particle pseudorapidity
     TH1* h24 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -392,6 +406,12 @@ void analyze_angles(EventCollector& evc, std::string filename, std::string drawO
     c1->SaveAs((filename + "_data_angles.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms of particle and proton matching
+ * 
+ * @param evc EventCollector
+ * @param filename Result pdf filename
+ */
 void analyze_trackmatch(EventCollector& evc, std::string filename) {
     TCanvas *c12 = new TCanvas("c12", "c12");
     c12->DivideSquare(8);
@@ -401,37 +421,35 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
     // Proton/track momentum matching
     TH2* h22 = evc.create_2Dhistogram(
             [](Event *event) {
-                double sigma_x_trk = 0;
+                double px_trk = 0;
                 for (int i = 0; i < event->ntracks; ++i)
-                    sigma_x_trk += event->get_particle(0,0,i)->px;
-                return std::vector{sigma_x_trk};
+                    px_trk += event->get_particle(0, 0, i)->px;
+                return std::vector{px_trk};
             }, [](Event *event) {
-                double sigma_x_prt = 0;
-                sigma_x_prt += event->get_proton(0)->old_px;
-                sigma_x_prt += event->get_proton(1)->old_px;
-                return std::vector{sigma_x_prt};
-            }, 100, -1, 1, 100, -1, 1, "track x momentum sum vs. proton x momentum sum ", true, "pr_px", "trk_px");
-    //h22->SetMinimum(5);
-    h22->Draw();
+                double px_prt = 0;
+                for (int i = 0; i < 2; ++i)
+                    px_prt += event->get_proton(i)->pr_px;
+                return std::vector{px_prt};
+            }, 100, -1, 1, 100, -1, 1, "Track x momentum sum vs. proton x momentum sum ", true, "Momentum (GeV)", "Momentum (GeV)");
+
     c12->cd(2);
     // Proton/track momentum matching
     TH2* h23 = evc.create_2Dhistogram(
             [](Event *event) {
                 std::vector<double> values(4);
-                double sum_x_trk = 0;
+                double py_trk = 0;
                 for (int i = 0; i < event->ntracks; ++i)
-                    sum_x_trk += event->get_particle(0, 0, i)->px;
-                return std::vector{sum_x_trk};
+                    py_trk += event->get_particle(0, 0, i)->py;
+                return std::vector{py_trk};
             }, [](Event *event) {
-                double sum_x_prt = 0;
+                double py_prt = 0;
                 for (int i = 0; i < 2; ++i)
-                    sum_x_prt += event->get_proton(i)->pr_px;
-                return std::vector{sum_x_prt};
-            }, 100, -1, 1, 100, -1,1, "track x momentum sum vs. new proton x momentum sum", true, "new pr_py", "trk_py");
-    //h22->SetMinimum(5);
-    h23->Draw();
+                    py_prt += event->get_proton(i)->pr_py;
+                return std::vector{py_prt};
+            }, 100, -1, 1, 100, -1, 1, "Track y momentum sum vs. proton y momentum sum", true, "Momentum (GeV)", "Momentum (GeV)");
 
     c12->cd(3);
+    // Sum of proton and track x momentum
     TH1* h24 = evc.create_1Dhistogram(
             [](Event *event) {
                 double sigma_x_trk = 0;
@@ -439,11 +457,10 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
                     sigma_x_trk += event->get_particle(0,0,i)->px;
                 double sigma_x_prt = 0;
                 for (int i = 0; i < 2; ++i)
-                    sigma_x_prt += event->get_proton(i)->old_px;
+                    sigma_x_prt += event->get_proton(i)->pr_px;
                 return std::vector{sigma_x_prt+sigma_x_trk};
             },
-            200, -1.5, 1.5, "Sum between track x momenta and proton x momenta", true, "", "");
-    h24->Draw();
+            200, -1.5, 1.5, "Sum between track x momenta and proton x momenta", true, "Momentum (GeV)", "Momentum (GeV)");
 
     c12->cd(4);
     TH1* h25 = evc.create_1Dhistogram(
@@ -456,8 +473,7 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
                     sigma_x_prt += event->get_proton(i)->pr_px;
                 return std::vector{sigma_x_prt+sigma_x_trk};
             },
-            200, -1.5, 1.5, "Sum between track x momenta and new proton x momenta", true, "", "");
-    h25->Draw();
+            200, -1.5, 1.5, "Sum between track y momenta and proton y momenta", true, "Momentum (GeV)", "Momentum (GeV)");
 
     c12->cd(5);
     // Proton/track momentum matching
@@ -470,7 +486,7 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
             }, [](Event *event) {
                 double sum_y_prt = 0;
                 for (int i = 0; i < 2; ++i)
-                    sum_y_prt += event->get_proton(i)->old_py;
+                    sum_y_prt += event->get_proton(i)->pr_py;
                 return std::vector{sum_y_prt};
             }, 100, -1, 1, 100, -1,1, "track y momentum sum vs. proton y momentum sum ", true, "pr_py", "trk_py");
     //h22->SetMinimum(5);
@@ -503,7 +519,7 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
                     sigma_y_trk += event->get_particle(0,0,i)->py;
                 double sigma_y_prt = 0;
                 for (int i = 0; i < 2; ++i)
-                    sigma_y_prt += event->get_proton(i)->old_py;
+                    sigma_y_prt += event->get_proton(i)->pr_py;
                 return std::vector{sigma_y_prt+sigma_y_trk};
             },
             200, -1.5, 1.5, "Sum between track y momenta and proton y momenta", true, "", "");
@@ -523,9 +539,15 @@ void analyze_trackmatch(EventCollector& evc, std::string filename) {
             200, -1.5, 1.5, "Sum between track y momenta and proton y momenta", true, "", "");
     h28->Draw();
 
-    c12->SaveAs((filename + "_data_angles.pdf").c_str());
+    c12->SaveAs((filename + "_data_prot_trac.pdf").c_str());
 }
 
+/**
+ * @brief Draw histograms of proton vertex matching
+ * 
+ * @param evc 
+ * @param filename 
+ */
 void analyze_vertmatch(EventCollector& evc, std::string filename) {
     TCanvas *c20 = new TCanvas("c20", "c20");
     c20->DivideSquare(8);
@@ -557,7 +579,7 @@ void analyze_vertmatch(EventCollector& evc, std::string filename) {
     //h22->SetMinimum(5);
     h23->Draw();
 
-    c20->SaveAs((filename + "_data_angles.pdf").c_str());
+    c20->SaveAs((filename + "_data_vertex.pdf").c_str());
 }
 
 /**
@@ -575,9 +597,9 @@ void analyze_protons(EventCollector& evc, std::string filename) {
     // X momentums of the two protons
     TH2* h31 = evc.create_2Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->old_px};
+            return std::vector<double>{event->get_proton(0)->pr_px};
         }, [](Event *event) {
-            return std::vector<double>{event->get_proton(1)->old_px};
+            return std::vector<double>{event->get_proton(1)->pr_px};
         }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton 1 X momentum vs. proton 2 X momentum", true,
         "Px of proton 1 (GeV)", "Px of proton 2 (GeV)");
 
@@ -585,9 +607,9 @@ void analyze_protons(EventCollector& evc, std::string filename) {
     // Y momentums of the two protons
     TH2* h32 = evc.create_2Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->old_py};
+            return std::vector<double>{event->get_proton(0)->pr_py};
         }, [](Event *event) {
-            return std::vector<double>{event->get_proton(1)->old_py};
+            return std::vector<double>{event->get_proton(1)->pr_py};
         }, 400, -1, 1, 400, -1, 1, "Proton 1 Y momentum vs. proton 2 Y momentum", true,
         "Py of proton 1 (GeV)", "Py of proton 2 (GeV)");
 
@@ -595,9 +617,9 @@ void analyze_protons(EventCollector& evc, std::string filename) {
     // Transverse momentums of the two protons
     TH2* h33 = evc.create_2Dhistogram(
         [](Event* event) {
-            return std::vector<double>{sqrt(pow(event->get_proton(0)->old_py, 2) + pow(event->get_proton(0)->old_px, 2))};
+            return std::vector<double>{sqrt(pow(event->get_proton(0)->pr_py, 2) + pow(event->get_proton(0)->pr_px, 2))};
         }, [](Event *event) {
-            return std::vector<double>{sqrt(pow(event->get_proton(1)->old_py, 2) + pow(event->get_proton(1)->old_px, 2))};
+            return std::vector<double>{sqrt(pow(event->get_proton(1)->pr_py, 2) + pow(event->get_proton(1)->pr_px, 2))};
         }, 300, 0, 1.5, 300, 0, 1.5, "Proton 1 pt vs. proton 2 pt", true,
         "Pt of proton 1 (GeV)", "Pt of proton 2 (GeV)");
 
@@ -605,9 +627,9 @@ void analyze_protons(EventCollector& evc, std::string filename) {
     // Proton X momentum sum vs. Y momentum sum
     TH2* h34 = evc.create_2Dhistogram(
         [](Event* event) {
-            return std::vector<double>{event->get_proton(0)->old_px + event->get_proton(1)->old_px};
+            return std::vector<double>{event->get_proton(0)->pr_px + event->get_proton(1)->pr_px};
         }, [](Event *event) {
-            return std::vector<double>{event->get_proton(0)->old_py + event->get_proton(1)->old_py};
+            return std::vector<double>{event->get_proton(0)->pr_py + event->get_proton(1)->pr_py};
         }, 300, -1.5, 1.5, 300, -1.5, 1.5, "Proton X momentum sum vs. Y momentum sum", true,
         "Px of protons (GeV)", "Py of protons (GeV)");
 
@@ -624,6 +646,9 @@ void analyze_protons(EventCollector& evc, std::string filename) {
  *
  * @param evc EventCollector
  * @param filename Result pdf filename
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
+ * @param scales The scales used to scale the histograms drawn on top of each other
  */
 void analyze_filters(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
     c1->cd(1);
@@ -647,6 +672,7 @@ void analyze_filters(EventCollector& evc, std::string filename, std::string draw
     l1->Draw();
 
     c1->cd(2);
+    // Z Location of the primary vertex
     TH1* h42 = evc.create_1Dhistogram(
         [](Event *event) {
             return std::vector<double>{event->zPV};
@@ -660,6 +686,9 @@ void analyze_filters(EventCollector& evc, std::string filename, std::string draw
  *
  * @param evc EventCollector
  * @param filename Result pdf filename
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
+ * @param scales The scales used to scale the histograms drawn on top of each other
  */
 void analyze_impact_minmax(EventCollector& evc, std::string filename, std::string drawOpt, TCanvas* c1, std::vector<double> scales) {
     c1->cd(1);
@@ -721,7 +750,9 @@ void analyze_impact_minmax(EventCollector& evc, std::string filename, std::strin
  * @brief Analyzes the initial data that hasn't been reconstructed
  * 
  * @param evc EventCollector
- * @param filename Name of the created histogram pdf file
+ * @param filename Result pdf filename
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
  */
 void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing data." << std::endl;
@@ -746,8 +777,10 @@ void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt
  * @brief Analyzes the first reconstruction data
  * 
  * @param evc EventCollector
- * @param filename Name of the created histogram pdf file
+ * @param filename Result pdf filename
  * @param type Type of initial particle
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvas the histograms are drawn onto. Has to be divided into four parts
  */
 void analyze_reco1(EventCollector& evc, std::string filename, std::string type, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
@@ -801,12 +834,6 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
             return values;
         }, 160, 0, 1.6, "Azimuthal angle between two particles", true, drawOpt, scales[0][0], "Azimuthal angle (rad)", "Events/10 mrad");
     
-    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
-    f1->SetParameters(0.15, 0.77, 340);
-    //f1->SetParameters(0.01, 1.02, 100);
-    f1->SetParNames("Sigma", "Mean", "Scale");
-    //h22->Fit("CauchyFit", "", "", 0.7, 0.8);
-
     // Longitunal angle between particles
     c[0]->cd(2);
     TH1* h27 = evc.create_1Dhistogram(
@@ -876,6 +903,13 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
     
     c[1]->SaveAs((filename + "_reco1B.pdf").c_str());
 
+    // Different kinds of fit functions that can be used for fitting
+    TF1* f1 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
+    f1->SetParameters(0.15, 0.77, 340);
+    //f1->SetParameters(0.01, 1.02, 100);
+    f1->SetParNames("Sigma", "Mean", "Scale");
+    //h22->Fit("CauchyFit", "", "", 0.7, 0.8);
+
     TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
     f2->SetParameters(0.15, 0.77, 1400, 0.6, 0.12, 90000, 0);
     //f2->SetParameters(0.05, 1.02, 1400, 1.2, 0.05, 150000, 0);
@@ -898,7 +932,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
 }
 
 /**
- * @brief Filters particles reconstructed from two tracks
+ * @brief Filters particles reconstructed from two tracks.
  *
  * @param evc EventCollector
  */
@@ -914,6 +948,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
                 partWidth = RHO_WIDTH;
             }
 
+            // Mass constraint on the particles
             for (int i = 0; i < parts.size(); ++i) {
                 double mass = parts[i]->mass;
                 if (mass < partMass - partWidth || mass > partMass + partWidth)
@@ -925,15 +960,15 @@ void filter_reco1(EventCollector& evc, std::string part) {
             double pt_x = 0;
             double pt_y = 0;
             for (auto & part : parts) {
-                pt_sum += part->pt;
+            //    pt_sum += part->pt;
                 pt_x += part->px;
                 pt_y += part->py;
             }
             // From the 2015 paper
-            //pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
+            pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
             if(pt_sum > 0.8) return false;
 
-            // Azimuthal angle between the particles
+            // Constraint on the azimuthal angle between the particles
             double angle = abs(parts[0]->phi - parts[1]->phi);
             if (angle > TMath::PiOver2()) angle = TMath::Pi() - angle;
             //if (angle < 0.6) return false;
@@ -944,7 +979,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
 }
 
 /**
- * @brief Filters on the original, reconstructed particle
+ * @brief Filters the twice reconstructed particles (supposed glueballs).
  *
  * @param evc EventCollector
  */
@@ -960,19 +995,21 @@ void filter_reco2(EventCollector& evc) {
 }
 
 /**
- * @brief Analyzes the second reconstructed data
+ * @brief Analyzes the twice reconstructed data
  * 
  * @param evc EventCollector
  * @param filename Name of the created histogram pdf file
+ * @param drawOpt Drawing options for the histograms
+ * @param c1 The canvases the histograms are drawn onto. Have to be divided into four parts
  */
-void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c) {
+void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c1) {
     std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
     TFile *results = TFile::Open(evc.results.c_str(), "");
     
-    std::vector<std::vector<Double_t>> scales(c.size(), std::vector<Double_t>(4, 0));
+    std::vector<std::vector<Double_t>> scales(c1.size(), std::vector<Double_t>(4, 0));
     for (int j = 0; j < 3; ++j) {
         for (int i = 1; i < 5; ++i) {
-            scales[j][i-1] = c[j]->GetPad(i)->GetUymax();
+            scales[j][i-1] = c1[j]->GetPad(i)->GetUymax();
         }
     }
 
@@ -993,10 +1030,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         }, 200, -10, 10, 100, 0, 1.5, "Particle pz vs pt of rho mesons", false, "Longitudinal momentum (GeV)", "Transverse momentum (GeV)");
-    h30->SetMinimum(1);
-    //h30->Draw("Colz");
 
-    c[3]->cd();
+    c1[3]->cd();
     // Reconstructed particle mass
     TH1 *h31 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -1013,7 +1048,7 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
     f1->SetParNames("Sigma", "Mean", "Scale");
     //h31->Fit("CauchyFit", "", "", 2.2, 2.24);
 
-    c[2]->cd(2);
+    c1[2]->cd(2);
     // Reconstructed particle pseudorapidity
     TH1* h32 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -1024,7 +1059,7 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             return values;
         }, 50, -5, 5, "Pseudorapidity of the recreated particle", true, drawOpt, scales[2][1], "Pseudorapidity", "Events");
     
-    c[2]->cd(3);
+    c1[2]->cd(3);
     // Reconstructed particle azimuthal angle
     TH1* h33 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -1035,7 +1070,7 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             return values;
         }, 64, -3.2, 3.2, "Azimuthal angle of the recreated particle", true, drawOpt, scales[2][2], "Angle (rad)", "Events");
 
-    c[2]->cd(4);
+    c1[2]->cd(4);
     // Reconstructed particle transverse momentum
     TH1* h34 = evc.create_1Dhistogram(
         [](Event *event) {
@@ -1046,9 +1081,10 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             return values;
         }, 100, 0, 5, "Transverse momentum of the recreated particle", true, drawOpt, scales[2][3], "Momentum (GeV)", "Events");
 
-    c[0]->SaveAs((filename + "_reco2A.pdf").c_str());
+    c1[2]->SaveAs((filename + "_reco2A.pdf").c_str());
 
-    c[3]->cd();
+    c1[3]->cd();
+    // Particle mass vs. eta
     TH2* h35 = evc.create_2Dhistogram(
         [](Event* event) {
             std::vector<double> values(event->particles[2].size());
@@ -1062,11 +1098,18 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             return values;
         }, 100, 1, 3, 100, -5, 5, "Particle mass vs. eta", false, "Mass (GeV)", "Pseudorapidity");
 
-    c[1]->SaveAs((filename + "_reco2B.pdf").c_str());
+    c1[3]->SaveAs((filename + "_reco2B.pdf").c_str());
 
     std::cout << "Finished analyzing the second iteration of recreated particles." << std::endl;
 }
 
+/**
+ * @brief Writes the particle data onto a csv file
+ * 
+ * @param filename Created file
+ * @param ec EventCollector
+ * @return int 
+ */
 int write_to_csv(const std::string& filename, const EventCollector& ec){
     std::ofstream file(filename);
 
@@ -1225,11 +1268,8 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
 
             // Protons
             file
-                    << pr1->p << ","
                     << pr1->Thx << ","
                     << pr1->Thy << ","
-                    << pr1->old_px << ","
-                    << pr1->old_py << ","
                     << pr1->pr_px << ","
                     << pr1->pr_py << ","
                     << pr1->pr_pz << ","
@@ -1243,11 +1283,8 @@ int write_to_csv(const std::string& filename, const EventCollector& ec){
                     << pr1->pr_posy_sigma << "," ;
 
             file
-                    << pr2->p << ","
                     << pr2->Thx << ","
                     << pr2->Thy << ","
-                    << pr2->old_px << ","
-                    << pr2->old_py << ","
                     << pr2->pr_px << ","
                     << pr2->pr_py << ","
                     << pr2->pr_pz << ","
@@ -1274,68 +1311,91 @@ int main()
 {
     TApplication app("app", nullptr, nullptr);
 
+    // Set the assumed initial particle here
     const std::string part_type = "pion";
+    // EventCollector for the actual data
     EventCollector evc_data(
-//             "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM40*.root?#tree"
-               ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-//            "/home/younes/totemdata/combined/TOTEM2*.root?#tree"
-            //"/home/younes/totemdata/mc/MinBias.root?#tree"
-//            ,"particle_reconstruction_results.root"
-               );
-
-    EventCollector evc_mc(
-        "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/rho.root?#tree"
-        ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_mc.root"
+                //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
+                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
+                //"/home/younes/totemdata/combined/TOTEM2*.root?#tree"
+                //"/home/younes/totemdata/mc/MinBias.root?#tree"
+                //,"particle_reconstruction_results.root"
     );
+    // EventCollector for the Monte Carlo data
+    EventCollector evc_mc(
+                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/mc/rho.root?#tree"
+                ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_mc.root"
+    );
+    // Canvases used to draw the histograms onto
     TCanvas* c100 = new TCanvas("c100", "c100");
     TCanvas* c101 = new TCanvas("c101", "c101");
     TCanvas* c102 = new TCanvas("c102", "c102");
     TCanvas* c103 = new TCanvas("c103", "c103");
     //TCanvas* c104 = new TCanvas("c104", "c104");
+
     c100->DivideSquare(4);
     c101->DivideSquare(4);
     c102->DivideSquare(4);
     //c103->DivideSquare(4);
     //c104->DivideSquare(4);
+    
     std::vector<TCanvas *> c = {c100, c101, c102, c103};
 
+    // Histogram style for the data
     TStyle* data = new TStyle("Data", "Data style");
     data->SetHistFillColor(kBlue);
     data->SetMarkerColor(kBlue);
     data->SetHistLineColor(kBlue);
 
+    // Histogram style for the Monte Carlo
     TStyle* MC = new TStyle("MC", "Monte Carlo style");
     MC->SetHistFillColor(2);
     MC->SetMarkerColor(2);
     MC->SetHistLineColor(2);
 
+    // First initialize the particles for data and MC
     initialize_particles(evc_data, part_type, true, true);
     initialize_particles(evc_mc, part_type, false, false);
+
+    // Do the initial filtering
     filter(evc_data, true, true);
     filter(evc_mc, false, false);
+
+    // Draw histograms analyzing the data if wanted
     //data->cd();
     //analyze_data(evc_data, "data1", "E", c);
     //MC->cd();
     //analyze_data(evc_mc, "MC", "E SAME", c);
+
+    // Do the first reconstruction to phi/rho
     reconstruct(evc_data);
     reconstruct(evc_mc);
+
+    // Filter the reconstructed data
     filter_reco1(evc_data, part_type);
     filter_reco1(evc_mc, part_type);
+
+    // Draw histograms analyzing the reconstructed particles if wanted
     data->cd();
     analyze_reco1(evc_data, "data1", part_type, "E", c);
     MC->cd();
     analyze_reco1(evc_mc, "MC", part_type, "E SAME", c);
-    //analyze_trackmatch(evc_data, "histogram1");
-    //analyze_vertmatch(evc_data, "histogram22");
+
+    // Do the second reconstruction to (hopefully) glueballs
     reconstruct(evc_data);
     reconstruct(evc_mc);
+
+    // Filter the final data
     //filter_reco2(evc_data);
+
+    // Analyze the final data
     data->cd();
     analyze_reco2(evc_data, "data1", "E", c);
     //MC->cd();
     //analyze_reco2(evc_mc, "MC", "E SAME", c);
 
+    // Write the data to a csv file if wanted
     //write_to_csv("testcsv.csv", evc_data);
 
     app.Run();

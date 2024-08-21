@@ -34,33 +34,22 @@ void Event::add_particle(double p, double pt, double eta, double phi, int q, dou
     add_particle(p, pt, eta, phi, q, dxy, dz, 0, ptErr, dxyErr, dzErr, i, j);
 }
 
-void Event::add_proton(double Thx, double Thy, double px, double py)
+void Event::add_proton(double Thx, double Thy, double pr_px, double pr_py, double pr_pz, double pr_ptx,
+                       double pr_pty, double pr_ptx_sigma, double pr_pty_sigma, double pr_posx, 
+                       double pr_posy, double pr_posx_sigma, double pr_posy_sigma)
 {
-    auto* proton = new Proton(Thx, Thy, px, py);
+    auto* proton = new Proton(Thx, Thy, pr_px, pr_py, pr_pz, pr_ptx, pr_pty, pr_ptx_sigma, pr_pty_sigma, pr_posx, pr_posy, pr_posx_sigma, pr_posy_sigma);
     protons.push_back(proton);
 }
 
-void Event::add_proton(double Thx, double Thy, double old_px, double old_py,
-                       double pr_px,
-                       double pr_py,
-                       double pr_pz,
-                       double pr_ptx,
-                       double pr_pty,
-                       double pr_ptx_sigma,
-                       double pr_pty_sigma,
-                       double pr_posx,
-                       double pr_posy,
-                       double pr_posx_sigma,
-                       double pr_posy_sigma)
+void Event::add_proton(double Thx, double Thy)
 {
-    auto* proton = new Proton(Thx, Thy, old_px, old_py, pr_px, pr_py, pr_pz, pr_ptx, pr_pty, pr_ptx_sigma, pr_pty_sigma, pr_posx, pr_posy, pr_posx_sigma, pr_posy_sigma);
-    protons.push_back(proton);
+    add_proton(Thx, Thy,0,0,0,0,0,0,0,0,0,0,0);
 }
-
 
 Particle* Event::get_particle(int i, int j, int k)
 {
-    return particles[i][j][k];
+    return particles.at(i).at(j).at(k);
 }
 
 Proton* Event::get_proton(int i)
@@ -78,28 +67,27 @@ void Event::set_masses_and_energies(double mass)
 }
 
 double Event::CauchyRelaDist(double *x, double *par) {
-    double q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
-    double q0 = sqrt(pow(par[1], 2) / 4 - pow(0.13957039, 2));
+    double q = sqrt(pow(x[0], 2) / 4 - pow(par[2], 2));
+    double q0 = sqrt(pow(par[1], 2) / 4 - pow(par[2], 2));
     double sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
-    return par[2] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
+    return par[3] * x[0] * par[1] * sigma / (pow(pow(x[0], 2) - pow(par[1], 2), 2) + pow(par[1], 2) * pow(sigma, 2));
 }
 
 double Event::SodingFit(double *x, double *par) {
-    double q = sqrt(pow(x[0], 2) / 4 - pow(0.13957039, 2));
-    double q0 = sqrt(pow(0.775, 2) / 4 - pow(0.13957039, 2));
-    double sigma = 0.182264 * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
-    return par[3] * (pow(0.775, 2) - pow(x[0], 2)) / (x[0] * sigma);
+    double q = sqrt(pow(x[0], 2) / 4 - pow(par[2], 2));
+    double q0 = sqrt(pow(par[1], 2) / 4 - pow(par[2], 2));
+    double sigma = par[0] * pow(q / q0, 3) * 2 * pow(q0, 2) / (pow(q0, 2) + pow(q, 2));
+    return par[3] * (pow(par[1], 2) - pow(x[0], 2)) / (x[0] * sigma);
 }
 
 double Event::CauchyRelaSodingFit(double *x, double *par) {
-    double p[4] = {0.182264,0.77521,1,0.316786};
-    return CauchyRelaDist(x, p) * SodingFit(x, p);
+    double p1[3] = {par[0],par[1],par[2]};
+    double p2[4] = {par[3],par[4],par[5],par[6]};
+    return CauchyRelaDist(x, p1) * SodingFit(x, p2);
 }
 
 Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
 {
-    TF1* f3 = new TF1("CauchySodingFit", Event::CauchyRelaSodingFit, -15, 15, 4);
-
     double E = p1->E + p2->E;
     double px = p1->px + p2->px;
     double py = p1->py + p2->py;
@@ -107,7 +95,6 @@ Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
     double p = sqrt(pow(px, 2) + pow(py, 2) + pow(pz, 2));
     double pt = sqrt(pow(px, 2) + pow(py, 2));
     double mass = sqrt(pow(E, 2) - pow(p, 2));
-    //mass += f3->Eval(mass) * 0.03;
     double eta = TMath::ATanH(pz / p);
     double phi = atan(py / px);
     int q = p1->q + p2->q;
@@ -120,9 +107,12 @@ Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
 
 void Event::reconstruct()
 {
+    // Select the latest reconstruction layer as a starting point
     std::vector<std::vector<Particle *>> init_particles = particles[particles.size() - 1];
     particles.push_back(std::vector<std::vector<Particle*>>{});
 
+    // Currently this assumes that there are either four or two particles in the initial particles vector
+    // It goes through all possible permutations and rejects the one where the particles are not neutral
     for (int j = 0; j < init_particles.size(); ++j)
     { 
         if (init_particles[0].size() == 2) {
