@@ -105,7 +105,7 @@ Particle* Event::reconstruct_particle(Particle* p1, Particle* p2)
     return new Particle(p, pt, px, py, pz, eta, phi, q, dxy, dz, mass, E, 0, 0, 0);
 }
 
-void Event::reconstruct()
+void Event::reconstruct(bool useMCCoupling)
 {
     // Select the latest reconstruction layer as a starting point
     std::vector<std::vector<Particle *>> init_particles = particles[particles.size() - 1];
@@ -118,6 +118,13 @@ void Event::reconstruct()
         if (init_particles[0].size() == 2) {
             Particle* part = reconstruct_particle(init_particles[j][0], init_particles[j][1]);
             particles[particles.size() - 1].push_back(std::vector<Particle *>{part});
+        }
+        else if (useMCCoupling) {
+            Particle* part1 = reconstruct_particle(init_particles[j][0], init_particles[j][1]);
+            Particle* part2 = reconstruct_particle(init_particles[j][2], init_particles[j][3]);
+            if (part1->q == 0 && part2->q == 0) { 
+                particles[particles.size() - 1].push_back(std::vector<Particle *>{part1, part2});
+            }
         }
         else {
             Particle* part1 = reconstruct_particle(init_particles[j][0], init_particles[j][1]);

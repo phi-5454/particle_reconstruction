@@ -145,7 +145,7 @@ void EventCollector::init_masses_and_energy(double mass) {
         }
 }
 
-void EventCollector::reconstruct_particles() {
+void EventCollector::reconstruct_particles(bool useMCCoupling) {
     for (Event *&event : events)
-        event->reconstruct();
+        event->reconstruct(useMCCoupling);
 }

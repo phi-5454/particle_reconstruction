@@ -221,8 +221,9 @@ public:
     /**
      * @brief Reconstructs all possible particles from different particle pairs where q_tot = 0 and adds them to the particles vector.
      * 
+     * @param useMCCoupling Whether to use MC coupling and not all possible combinations
      */
-    void reconstruct();
+    void reconstruct(bool useMCCoupling);
 
     /**
      * @brief Prints info of the event.

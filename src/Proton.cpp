@@ -25,8 +25,6 @@ Proton::Proton(double Thx, double Thy, double pr_px, double pr_py, double pr_pz,
     this->pr_posy = pr_posy;
     this->pr_posx_sigma = pr_posx_sigma;
     this->pr_posy_sigma = pr_posy_sigma;
-
-    calculate_momenta();
 }
 
 Proton::Proton(double Thx, double Thy) :Proton(Thx, Thy,0,0,0,0,0,0,0,0,0,0,0){

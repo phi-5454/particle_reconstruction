@@ -88,7 +88,7 @@ public:
         
         // This has to do with the Monte Carlo drawings. Basically it scales the histograms 
         // to have the same max value for presentation purposes.
-        if (drawOptions.find("SAME") != -1 ) {
+        if (drawOpt.find("SAME") != -1 ) {
             double max = 1.07*hist->GetMaximum();
             double scale = scaleFac / max;
             hist->Scale(scale);
@@ -427,7 +427,8 @@ public:
     /**
      * @brief Reconstructs one particle from two particles with all permutations in events.
      *
+     * @param useMCCoupling Whether to use Monte Carlo coupling and not all possible combinations 
      */
-    void reconstruct_particles();
+    void reconstruct_particles(bool useMCCoupling);
 };
 #endif
