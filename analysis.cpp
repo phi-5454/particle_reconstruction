@@ -230,7 +230,7 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     });
     std::cout << "After momentum matcing filter: " << evc.events.size() << std::endl;
     }
-    
+
     // Filter out everything but four-track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
     std::cout << "After four-track + dxy + dz: " << evc.events.size() << std::endl;
@@ -970,9 +970,11 @@ void filter_reco1(EventCollector& evc, std::string part) {
 
             double partMass = PHI_MASS;
             double partWidth = PHI_WIDTH;
+            double pt_cut = 0.3;
             if (part == "pion") {
                 partMass = RHO_MASS;
                 partWidth = RHO_WIDTH;
+                pt_cut = 0.8;
             }
 
             // Mass constraint on the particles
@@ -993,7 +995,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
             }
             // From the 2015 paper
             pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
-            //if(pt_sum > 0.8) return false;
+            if(pt_sum > pt_cut) return false;
 
             // Constraint on the azimuthal angle between the particles
             double angle = abs(parts[0]->phi - parts[1]->phi);
@@ -1013,9 +1015,8 @@ void filter_reco1(EventCollector& evc, std::string part) {
 void filter_reco2(EventCollector& evc) {
     evc.filter_original(
             [](std::vector<Particle*> part) {
-                //std::cerr << part[0]->mass;
-                //if(part[0]->pt > 0.200) return false;
-                //if(abs(part[0]->eta) >= 1) return false;
+                std::cerr << part[0]->mass;
+                if(abs(part[0]->eta) > 1) return false;
                 return true;
             }
     );
@@ -1140,7 +1141,7 @@ int main()
     // EventCollector for the actual data
     EventCollector evc_data(
                 //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM20*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
                 ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
                 //"/home/younes/totemdata/combined/TOTEM2*.root?#tree"
                 //"/home/younes/totemdata/mc/MinBias.root?#tree"
@@ -1216,8 +1217,8 @@ int main()
     // Analyze the final data
     data->cd();
     analyze_reco2(evc_data, "data1", "E", c);
-    MC->cd();
-    analyze_reco2(evc_mc, "MC", "E SAME", c);
+    //MC->cd();
+    //analyze_reco2(evc_mc, "MC", "E SAME", c);
 
     // Write the data to a csv file if wanted
     //write_to_csv("testcsv.csv", evc_data);
