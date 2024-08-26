@@ -127,8 +127,6 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     evc.filter_events([](Event *event) { return event->ntracks > 2; });
     std::cout << "Without two-tracks: " << evc.events.size() << std::endl;
 
-    if (new_ntuples) { 
-
     // Filter out looper tracks (multiple detections for a single particle)
     evc.filter_events(
         [](Event *event) {
@@ -145,14 +143,6 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     );
     std::cout << "Without loopers: " << evc.events.size() << std::endl;
 
-    // Filter our badly reconstructed tracks or long-lived particles based on primary collision vertex XY position
-    evc.filter_events_distribution(
-        [](Event *event) {
-            std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
-            return values;
-        }, "gaus", 3);
-    std::cout << "After XYPV filter: " << evc.events.size() << std::endl;
-
     // Filter our badly reconstructed tracks based on primary vertex Z position
     evc.filter_events_distribution(
         [](Event *event) {
@@ -161,6 +151,43 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
         },
         "gaus", 3);
     std::cout << "After ZPV filter: " << evc.events.size() << std::endl;
+
+    // Filter out background particles and bad tracks based on particle's 
+    // smallest distance from the primary vertex in xy-plane
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dxy) < 0.0652992; // Three sigmas
+        }
+    );
+
+    // Filter out background particles and bad tracks based on particle's
+    // smallest distance from the primary vertex in z-axis
+    evc.filter_tracks(
+        [](Particle* part) {
+            return abs(part->dz) < 0.05 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
+        }
+    );
+
+    if (new_ntuples) { 
+    // Filter our badly reconstructed tracks or long-lived particles based on primary collision vertex XY position
+    evc.filter_events_distribution(
+        [](Event *event) {
+            std::vector<double> values = {sqrt(pow(event->xPV, 2) + pow(event->yPV, 2))};
+            return values;
+        }, "gaus", 3);
+    std::cout << "After XYPV filter: " << evc.events.size() << std::endl;
+    }
+
+    if (new_protons) {
+    /*
+    // Filter badly reconstructed proton tracks based on proton vertex x position
+    evc.filter_events([](Event * event) {
+        const double threshold = 0.05;
+        auto prtx_a = event->get_proton(0)->pr_posx;
+        auto prtx_b = event->get_proton(1)->pr_posx;
+        return abs(prtx_a - prtx_b) < threshold;
+    });
+    */
 
     // Filter out elastic proton collisions
     evc.filter_events([](Event * event) {
@@ -202,34 +229,8 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
         return a && b;
     });
     std::cout << "After momentum matcing filter: " << evc.events.size() << std::endl;
-
-    /*
-    // Filter badly reconstructed proton tracks based on proton vertex x position
-    evc.filter_events([](Event * event) {
-        const double threshold = 0.05;
-        auto prtx_a = event->get_proton(0)->pr_posx;
-        auto prtx_b = event->get_proton(1)->pr_posx;
-        return abs(prtx_a - prtx_b) < threshold;
-    });
-     */
-
-    // Filter out background particles and bad tracks based on particle's 
-    // smallest distance from the primary vertex in xy-plane
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dxy) < 0.0652992; // Three sigmas
-        }
-    );
-
-    // Filter out background particles and bad tracks based on particle's
-    // smallest distance from the primary vertex in z-axis
-    evc.filter_tracks(
-        [](Particle* part) {
-            return abs(part->dz) < 0.06 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
-        }
-    );
     }
-
+    
     // Filter out everything but four-track events
     evc.filter_events([](Event *event) { return event->ntracks == 4; });
     std::cout << "After four-track + dxy + dz: " << evc.events.size() << std::endl;
@@ -992,7 +993,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
             }
             // From the 2015 paper
             pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
-            if(pt_sum > 0.8) return false;
+            //if(pt_sum > 0.8) return false;
 
             // Constraint on the azimuthal angle between the particles
             double angle = abs(parts[0]->phi - parts[1]->phi);
@@ -1033,7 +1034,7 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
     TFile *results = TFile::Open(evc.results.c_str(), "");
     
     std::vector<std::vector<Double_t>> scales(c1.size(), std::vector<Double_t>(4, 0));
-    for (int j = 0; j < 3; ++j) {
+    for (int j = 0; j < 3; j = j + 2) {
         for (int i = 1; i < 5; ++i) {
             scales[j][i-1] = c1[j]->GetPad(i)->GetUymax();
         }
@@ -1067,7 +1068,7 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         },
-        100, 1, 3, "Mass of the recreated particle", true, drawOpt, 1, "Mass (GeV)", "Events");
+        100, 1, 3, "Mass of the recreated particle", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
     f1->SetParameters(0.02, 2.22, 6);
@@ -1135,10 +1136,11 @@ int main()
 
     // Set the assumed initial particle here
     const std::string part_type = "kaon";
+
     // EventCollector for the actual data
     EventCollector evc_data(
                 //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM20*.root?#tree"
                 ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
                 //"/home/younes/totemdata/combined/TOTEM2*.root?#tree"
                 //"/home/younes/totemdata/mc/MinBias.root?#tree"
@@ -1195,27 +1197,27 @@ int main()
     reconstruct(evc_mc, true);
 
     // Filter the reconstructed data
-    //filter_reco1(evc_data, part_type);
-    //filter_reco1(evc_mc, part_type);
+    filter_reco1(evc_data, part_type);
+    filter_reco1(evc_mc, part_type);
 
     // Draw histograms analyzing the reconstructed particles if wanted
-    data->cd();
-    analyze_reco1(evc_data, "data1", part_type, "E", c);
-    MC->cd();
-    analyze_reco1(evc_mc, "MC", part_type, "E SAME", c);
+    //data->cd();
+    //analyze_reco1(evc_data, "data1", part_type, "E", c);
+    //MC->cd();
+    //analyze_reco1(evc_mc, "MC", part_type, "E SAME", c);
 
     // Do the second reconstruction to (hopefully) glueballs
-    //reconstruct(evc_data, false);
-    //reconstruct(evc_mc, false);
+    reconstruct(evc_data, false);
+    reconstruct(evc_mc, false);
 
     // Filter the final data
     //filter_reco2(evc_data);
 
     // Analyze the final data
-    //data->cd();
-    //analyze_reco2(evc_data, "data1", "E", c);
-    //MC->cd();
-    //analyze_reco2(evc_mc, "MC", "E SAME", c);
+    data->cd();
+    analyze_reco2(evc_data, "data1", "E", c);
+    MC->cd();
+    analyze_reco2(evc_mc, "MC", "E SAME", c);
 
     // Write the data to a csv file if wanted
     //write_to_csv("testcsv.csv", evc_data);
