@@ -970,11 +970,11 @@ void filter_reco1(EventCollector& evc, std::string part) {
 
             double partMass = PHI_MASS;
             double partWidth = PHI_WIDTH;
-            double pt_cut = 0.3;
+            double pt_cut = 90; // 0.3 seems to be the best for diagonal phis
             if (part == "pion") {
                 partMass = RHO_MASS;
                 partWidth = RHO_WIDTH;
-                pt_cut = 0.8;
+                pt_cut = 0.8; // 0.8 from the 2015 paper
             }
 
             // Mass constraint on the particles
@@ -993,7 +993,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
                 pt_x += part->px;
                 pt_y += part->py;
             }
-            // From the 2015 paper
+
             pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
             if(pt_sum > pt_cut) return false;
 
@@ -1013,13 +1013,14 @@ void filter_reco1(EventCollector& evc, std::string part) {
  * @param evc EventCollector
  */
 void filter_reco2(EventCollector& evc) {
+    std::cout << "Filtering the second iteration of recreated particles." << std::endl;
     evc.filter_original(
             [](std::vector<Particle*> part) {
-                std::cerr << part[0]->mass;
                 if(abs(part[0]->eta) > 1) return false;
                 return true;
             }
     );
+    std::cout << "Finished filtering the second iteration of recreated particles." << std::endl;
 }
 
 /**
@@ -1141,7 +1142,7 @@ int main()
     // EventCollector for the actual data
     EventCollector evc_data(
                 //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM4*.root?#tree"
                 ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
                 //"/home/younes/totemdata/combined/TOTEM2*.root?#tree"
                 //"/home/younes/totemdata/mc/MinBias.root?#tree"
@@ -1212,7 +1213,7 @@ int main()
     reconstruct(evc_mc, false);
 
     // Filter the final data
-    //filter_reco2(evc_data);
+    filter_reco2(evc_data);
 
     // Analyze the final data
     data->cd();
