@@ -188,7 +188,7 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
         return abs(prtx_a - prtx_b) < threshold;
     });
     */
-
+/*
     // Filter out elastic proton collisions
     evc.filter_events([](Event * event) {
         double px = 0;
@@ -202,7 +202,7 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     });
 
     std::cout << "Without elastic protons: " << evc.events.size() << std::endl;
-     
+     */
     // Filter out badly reconstructed tracks based on proton-track momentum matching.
     // This is currently done when creating the ntuples, this just describes the process and filter values
     evc.filter_events([](Event * event) {
@@ -786,7 +786,7 @@ void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt
  */
 void analyze_reco1(EventCollector& evc, std::string filename, std::string type, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
-    TFile *results = TFile::Open(evc.results.c_str(), "");
+    TFile *results = TFile::Open(evc.results.c_str(), "RECREATE");
 
     std::vector<std::vector<Double_t>> scales(c.size(), std::vector<Double_t>(4, 0));
     for (int j = 0; j < 1; ++j) {
@@ -895,6 +895,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
             return values;
         }, 120, min, max, "Mass of recreated particles", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
 
+    h24->SetName("Phi_diag_mass");
+    h24->Write();
+
     //c[1]->cd();
     // Mass distribution of each reconstructed particle pair
     TH2 *h21 = evc.create_2Dhistogram(
@@ -924,8 +927,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
         h22->Scale(scale);
     }
 
-    //c[1]->cd(2);
+    //c[1]->cd();
     //h22->Draw(drawOpt.c_str());
+    h22->Write();
 
     //c[1]->cd(3);
     c[1]->SaveAs((filename + "_reco1B.pdf").c_str());
@@ -970,7 +974,8 @@ void filter_reco1(EventCollector& evc, std::string part) {
 
             double partMass = PHI_MASS;
             double partWidth = PHI_WIDTH;
-            double pt_cut = 0.3; // 0.3 seems to be the best for diagonal phis
+            double pt_cut = 0.3; // 0.3 seems to be the best for diagonal phis. Doesn't work for parallel,
+            // use filter_reco2 eta constraint instead.
             if (part == "pion") {
                 partMass = RHO_MASS;
                 partWidth = RHO_WIDTH;
@@ -989,7 +994,7 @@ void filter_reco1(EventCollector& evc, std::string part) {
             double pt_x = 0;
             double pt_y = 0;
             for (auto & part : parts) {
-            //    pt_sum += part->pt;
+                //pt_sum += part->pt; // For some reason this works for the rho signal
                 pt_x += part->px;
                 pt_y += part->py;
             }
@@ -1016,7 +1021,7 @@ void filter_reco2(EventCollector& evc) {
     std::cout << "Filtering the second iteration of recreated particles." << std::endl;
     evc.filter_original(
             [](std::vector<Particle*> part) {
-                if(abs(part[0]->eta) > 1) return false;
+                //if(abs(part[0]->eta) > 1.25) return false;
                 return true;
             }
     );
@@ -1033,7 +1038,7 @@ void filter_reco2(EventCollector& evc) {
  */
 void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c1) {
     std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
-    TFile *results = TFile::Open(evc.results.c_str(), "");
+    TFile *results = TFile::Open(evc.results.c_str(), "RECREATE");
     
     std::vector<std::vector<Double_t>> scales(c1.size(), std::vector<Double_t>(4, 0));
     for (int j = 0; j < 3; j = j + 2) {
@@ -1070,12 +1075,19 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         },
-        20, 2, 2.4, "Mass of the recreated particle", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
+        100, 1, 3, "Mass of the recreated particle", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
+    h31->SetTitle("Glue_phi_diag_mass");
+    h31->Write();
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
     f1->SetParameters(0.02, 2.22, 6);
     f1->SetParNames("Sigma", "Mean", "Scale");
-    h31->Fit("CauchyFit", "", "", 2.17, 2.25);
+    //h31->Fit("CauchyFit", "", "", 2.17, 2.25);
+
+    TF1* f2 = new TF1("CauchyLandau", CauchyLandauDist, -15, 15, 7);
+    f2->SetParameters(0.02, 2.22, 10, 0.6, 2.4, 10);
+    f2->SetParNames("SigmaC", "MeanC", "ScaleC", "MeanL", "SigmaL", "ScaleL", "Const");
+    //h31->Fit("CauchyLandau", "", "", 2.1, 3);
 
     c1[2]->cd(2);
     // Reconstructed particle pseudorapidity
@@ -1142,10 +1154,8 @@ int main()
     // EventCollector for the actual data
     EventCollector evc_data(
                 //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/user/y/yelberke/TOTEM_2018_ADDEDVARS_OUT/combined/TOTEM2*.root?#tree"
+                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/YounesNtuples/TOTEM2*.root?#tree"
                 ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
-                //"/home/younes/totemdata/combined/TOTEM2*.root?#tree"
-                //"/home/younes/totemdata/mc/MinBias.root?#tree"
                 //,"particle_reconstruction_results.root"
     );
     // EventCollector for the Monte Carlo data
@@ -1182,11 +1192,11 @@ int main()
 
     // First initialize the particles for data and MC
     initialize_particles(evc_data, part_type, true, true);
-    initialize_particles(evc_mc, part_type, false, false);
+    //initialize_particles(evc_mc, part_type, false, false);
 
     // Do the initial filtering
     filter(evc_data, true, true);
-    filter(evc_mc, false, false);
+    //filter(evc_mc, false, false);
 
     // Draw histograms analyzing the data if wanted
     //data->cd();
@@ -1196,27 +1206,28 @@ int main()
 
     // Do the first reconstruction to phi/rho
     reconstruct(evc_data, false);
-    reconstruct(evc_mc, true);
+    //reconstruct(evc_mc, true);
 
-    // Filter the reconstructed data
-    filter_reco1(evc_data, part_type);
-    filter_reco1(evc_mc, part_type);
 
     // Draw histograms analyzing the reconstructed particles if wanted
     //data->cd();
-    //analyze_reco1(evc_data, "data1", part_type, "E", c);
+    analyze_reco1(evc_data, "data1", part_type, "E", c);
     //MC->cd();
     //analyze_reco1(evc_mc, "MC", part_type, "E SAME", c);
 
+    // Filter the reconstructed data
+    filter_reco1(evc_data, part_type);
+    //filter_reco1(evc_mc, part_type);
+
     // Do the second reconstruction to (hopefully) glueballs
     reconstruct(evc_data, false);
-    reconstruct(evc_mc, false);
+    //reconstruct(evc_mc, false);
 
     // Filter the final data
-    //filter_reco2(evc_data);
+    filter_reco2(evc_data);
 
     // Analyze the final data
-    data->cd();
+    //data->cd();
     analyze_reco2(evc_data, "data1", "E", c);
     //MC->cd();
     //analyze_reco2(evc_mc, "MC", "E SAME", c);
