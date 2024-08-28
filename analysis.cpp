@@ -786,7 +786,7 @@ void analyze_data(EventCollector& evc, std::string filename, std::string drawOpt
  */
 void analyze_reco1(EventCollector& evc, std::string filename, std::string type, std::string drawOpt, std::vector<TCanvas*> c) {
     std::cout << "Analyzing the first iteration of recreated particles." << std::endl;
-    TFile *results = TFile::Open(evc.results.c_str(), "RECREATE");
+    TFile *results = TFile::Open(evc.results.c_str(), "UPDATE");
 
     std::vector<std::vector<Double_t>> scales(c.size(), std::vector<Double_t>(4, 0));
     for (int j = 0; j < 1; ++j) {
@@ -893,9 +893,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of recreated particles", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of phi meson from diagonal events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
 
-    h24->SetName("Phi_diag_mass");
+    h24->SetName("Mass_phi_diag");
     h24->Write();
 
     //c[1]->cd();
@@ -919,7 +919,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
     int highbin = bins * (partMass + partWidth - min) / (max - min);
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
-    h22->SetTitle("Mass of second particle when first is assumed rho");
+    h22->SetTitle("Mass of second particle when first has mass 1.021 +- 0.034 GeV from diagonal events");
+    h22->SetName("Mass_phi_diag_second");
 
     if (drawOpt.find("SAME") != -1 ) {
         double max = 1.07*h22->GetMaximum();
@@ -959,6 +960,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
     //h23->Fit("CauchyFit", "", "", 1.014, 1.026);
     //h23->Fit("CauchyLandau", "", "", 0, 2);
 
+    results->Close();
     std::cout << "Finished analyzing the first iteration of recreated particles." << std::endl;
 }
 
@@ -1021,7 +1023,7 @@ void filter_reco2(EventCollector& evc) {
     std::cout << "Filtering the second iteration of recreated particles." << std::endl;
     evc.filter_original(
             [](std::vector<Particle*> part) {
-                //if(abs(part[0]->eta) > 1.25) return false;
+                //if(abs(part[0]->eta) > 1) return false;
                 return true;
             }
     );
@@ -1038,7 +1040,7 @@ void filter_reco2(EventCollector& evc) {
  */
 void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOpt, std::vector<TCanvas*> c1) {
     std::cout << "Analyzing the second iteration of recreated particles." << std::endl;
-    TFile *results = TFile::Open(evc.results.c_str(), "RECREATE");
+    TFile *results = TFile::Open(evc.results.c_str(), "UPDATE");
     
     std::vector<std::vector<Double_t>> scales(c1.size(), std::vector<Double_t>(4, 0));
     for (int j = 0; j < 3; j = j + 2) {
@@ -1075,8 +1077,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         },
-        100, 1, 3, "Mass of the recreated particle", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
-    h31->SetTitle("Glue_phi_diag_mass");
+        100, 2, 3, "Mass of the recreated particle from diagonal phi events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
+    h31->SetName("Mass_glue_from_phi_diag");
     h31->Write();
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -1140,6 +1142,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
         }, 100, 1, 3, 100, -5, 5, "Particle mass vs. eta", false, "Mass (GeV)", "Pseudorapidity");
 
     c1[3]->SaveAs((filename + "_reco2B.pdf").c_str());
+
+    results->Close();
 
     std::cout << "Finished analyzing the second iteration of recreated particles." << std::endl;
 }
