@@ -893,9 +893,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of rho meson from parallel events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of rho meson from diagonal events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
 
-    h24->SetName("Mass_rho_para");
+    h24->SetName("Mass_rho_diag");
     h24->Write();
 
     //c[1]->cd();
@@ -919,8 +919,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
     int highbin = bins * (partMass + partWidth - min) / (max - min);
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
-    h22->SetTitle("Mass of second particle when first has mass 0.760 +- 0.070 GeV from parallel events");
-    h22->SetName("Mass_rho_para_second");
+    h22->SetTitle("Mass of second particle when first has mass 0.760 +- 0.070 GeV from diagonal events");
+    h22->SetName("Mass_rho_diag_second");
 
     if (drawOpt.find("SAME") != -1 ) {
         double max = 1.07*h22->GetMaximum();
@@ -1077,8 +1077,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         },
-        100, 1, 3, "Mass of the recreated particle from parallel rho events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
-    h31->SetName("Mass_glue_from_rho_para");
+        100, 1, 3, "Mass of the recreated particle from diagonal rho events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
+    h31->SetName("Mass_glue_from_rho_diag");
     h31->Write();
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -1158,7 +1158,7 @@ int main()
     // EventCollector for the actual data
     EventCollector evc_data(
                 //"/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/ntuples/data/TOTEM*.root?#tree"
-                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/YounesNtuples/TOTEM4*.root?#tree"
+                "/eos/cms/store/group/phys_diffraction/CMSTotemLowPU2018/YounesNtuples/TOTEM2*.root?#tree"
                 ,"/afs/cern.ch/user/p/ptuomola/private/particle_reconstruction_results.root"
                 //,"particle_reconstruction_results.root"
     );
