@@ -896,7 +896,14 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
         }, 120, min, max, "Mass of rho meson from diagonal events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
 
     h24->SetName("Mass_rho_diag");
-    h24->Write();
+
+    TF1* f13 = new TF1("CauchyFit", CauchyDist, -15, 15, 3);
+    f13->SetParameters(0.15, 0.77, 340);
+    //f1->SetParameters(0.01, 1.02, 100);
+    f13->SetParNames("Sigma", "Mean", "Scale");
+    h24->Fit("CauchyFit", "", "", 0.7, 0.85);
+
+    //h24->Write();
 
     //c[1]->cd();
     // Mass distribution of each reconstructed particle pair
@@ -930,7 +937,7 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
 
     //c[1]->cd();
     //h22->Draw(drawOpt.c_str());
-    h22->Write();
+    //h22->Write();
 
     //c[1]->cd(3);
     c[1]->SaveAs((filename + "_reco1B.pdf").c_str());
@@ -1043,7 +1050,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
     TFile *results = TFile::Open(evc.results.c_str(), "UPDATE");
     
     std::vector<std::vector<Double_t>> scales(c1.size(), std::vector<Double_t>(4, 0));
-    for (int j = 0; j < 3; j = j + 2) {
+    for (int j = 0; j < 3; j = j + 2) { // This part here may cause issues as the selected canvases need to be devided into four parts.
+                                        // If this part is giving you errors, check that it is the case.
         for (int i = 1; i < 5; ++i) {
             scales[j][i-1] = c1[j]->GetPad(i)->GetUymax();
         }
@@ -1079,7 +1087,13 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
         },
         100, 1, 3, "Mass of the recreated particle from diagonal rho events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
     h31->SetName("Mass_glue_from_rho_diag");
-    h31->Write();
+
+    TF1* f5 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
+    f5->SetParameters(0.02, 2.22, 6);
+    f5->SetParNames("Sigma", "Mean", "Scale");
+    h31->Fit("CauchyFit", "", "", 2.17, 2.25);
+
+    //h31->Write();
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
     f1->SetParameters(0.02, 2.22, 6);
@@ -1235,9 +1249,6 @@ int main()
     analyze_reco2(evc_data, "data1", "E", c);
     //MC->cd();
     //analyze_reco2(evc_mc, "MC", "E SAME", c);
-
-    // Write the data to a csv file if wanted
-    //write_to_csv("testcsv.csv", evc_data);
 
     app.Run();
 
