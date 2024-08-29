@@ -156,7 +156,7 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     // smallest distance from the primary vertex in xy-plane
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dxy) < 0.0652992; // Three sigmas
+            return abs(part->dxy) < 0.0435328; // Two sigmas
         }
     );
 
@@ -164,7 +164,7 @@ void filter(EventCollector& evc, bool new_ntuples, bool new_protons) {
     // smallest distance from the primary vertex in z-axis
     evc.filter_tracks(
         [](Particle* part) {
-            return abs(part->dz) < 0.05 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
+            return abs(part->dz) < 0.03 + abs(0.01*part->eta); // Two-dimensional with pseudorapidity. Three sigmas 0.0773883
         }
     );
 
@@ -893,9 +893,9 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
                 for (int j = 0; j < 2; ++j)
                     values[2*i+j] = event->get_particle(1, i, j)->mass;
             return values;
-        }, 120, min, max, "Mass of phi meson from parallel events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
+        }, 120, min, max, "Mass of rho meson from parallel events", true, drawOpt, scales[1][0], "Mass (GeV)", "Events");
 
-    h24->SetName("Mass_phi_para");
+    h24->SetName("Mass_rho_para");
     h24->Write();
 
     //c[1]->cd();
@@ -919,8 +919,8 @@ void analyze_reco1(EventCollector& evc, std::string filename, std::string type, 
     int highbin = bins * (partMass + partWidth - min) / (max - min);
 
     TH1* h22 = h21->ProjectionX("px", lowbin, highbin);
-    h22->SetTitle("Mass of second particle when first has mass 1.021 +- 0.034 GeV from parallel events");
-    h22->SetName("Mass_phi_para_second");
+    h22->SetTitle("Mass of second particle when first has mass 0.760 +- 0.070 GeV from parallel events");
+    h22->SetName("Mass_rho_para_second");
 
     if (drawOpt.find("SAME") != -1 ) {
         double max = 1.07*h22->GetMaximum();
@@ -996,13 +996,13 @@ void filter_reco1(EventCollector& evc, std::string part) {
             double pt_x = 0;
             double pt_y = 0;
             for (auto & part : parts) {
-                //pt_sum += part->pt; // For some reason this works for the rho signal
+                pt_sum += part->pt; // For some reason this works for the rho signal
                 pt_x += part->px;
                 pt_y += part->py;
             }
 
-            pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
-            //if(pt_sum > pt_cut) return false;
+            //pt_sum = sqrt(pow(pt_x, 2) + pow(pt_y, 2));
+            if(pt_sum > pt_cut) return false;
 
             // Constraint on the azimuthal angle between the particles
             double angle = abs(parts[0]->phi - parts[1]->phi);
@@ -1077,8 +1077,8 @@ void analyze_reco2(EventCollector& evc, std::string filename, std::string drawOp
             }
             return values;
         },
-        100, 2, 3, "Mass of the recreated particle from parallel phi events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
-    h31->SetName("Mass_glue_from_phi_para");
+        100, 1, 3, "Mass of the recreated particle from parallel rho events", true, drawOpt, c1[3]->GetUymax(), "Mass (GeV)", "Events");
+    h31->SetName("Mass_glue_from_rho_para");
     h31->Write();
 
     TF1* f1 = new TF1("CauchyFit", CauchyDist, 2.1, 2.3, 3);
@@ -1153,7 +1153,7 @@ int main()
     TApplication app("app", nullptr, nullptr);
 
     // Set the assumed initial particle here
-    const std::string part_type = "kaon";
+    const std::string part_type = "pion";
 
     // EventCollector for the actual data
     EventCollector evc_data(
@@ -1228,7 +1228,7 @@ int main()
     //reconstruct(evc_mc, false);
 
     // Filter the final data
-    filter_reco2(evc_data);
+    //filter_reco2(evc_data);
 
     // Analyze the final data
     //data->cd();
